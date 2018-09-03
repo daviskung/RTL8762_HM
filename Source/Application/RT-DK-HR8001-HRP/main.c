@@ -384,7 +384,7 @@ void Board_Init(void)
 */
 void Driver_Init(void)
 {
-	BatteryMonitor_Init();
+	BatteryMonitor_Init();	// 2018.09.03
 }
 
 
