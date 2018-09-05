@@ -33,12 +33,16 @@
 #define SENSOR_PAH8001_TIMER_ID 3552
 
 
-#define HM_ADC_INTERVAL 		1000    // 40
+#define HM_ADC_INTERVAL 		40    // 40
 #define HM_ADC_AR_TIMER_ID		3553
 
 #define EVENT_START_HEARTRATE_CALCULATE 1
 #define EVENT_START_AR_ADC				2
 #define EVENT_ADC_CONVERT_BUF_FULL		3
+
+
+#define ARY_SIZE		100
+
 
 
 //--------------------------------------------------------------------------

@@ -31,7 +31,7 @@ extern bool HeartRateMonitorValueNotify(void);
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
 
-extern uint16_t adcConvertRes_HM[5];
+extern uint16_t adcConvertRes_HM[ARY_SIZE];
 extern uint8_t	adcConvertRes_HM_cnt;
 
 
@@ -133,8 +133,8 @@ bool AR_ADC_CH1(void)
 	//	_time_stamp++;
 
 	// Reset Timer 
-		xTimerReset(hADC_AR_CH1_Timer, 1000);
-		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  AR_ADC_CH1 timer ** ", 0);
+		xTimerReset(hADC_AR_CH1_Timer, HM_ADC_INTERVAL);
+		//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  AR_ADC_CH1 timer ** ", 0);
 
 	//enable ADC read and wait for ADC data ready interrupt
     	ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);   //must disable first
@@ -146,12 +146,12 @@ bool AR_ADC_CH1(void)
     /*read sample result*/
     
 	adcConvertRes_HM_cnt++;
-	if( adcConvertRes_HM_cnt > 4 ) adcConvertRes_HM_cnt=0;
+	if( adcConvertRes_HM_cnt >= ARY_SIZE ) adcConvertRes_HM_cnt=0;
     adcConvertRes_HM[adcConvertRes_HM_cnt] = ADC_Read(ADC, ADC_CH1);
 
 	//DBG_DIRECT("adcConvertRes_HM[%d] = %d \n",adcConvertRes_HM_cnt,adcConvertRes_HM[adcConvertRes_HM_cnt]);
 
-	if( adcConvertRes_HM_cnt == 4 )	_hr_event = EVENT_ADC_CONVERT_BUF_FULL;
+	if( adcConvertRes_HM_cnt == (ARY_SIZE-1) )	_hr_event = EVENT_ADC_CONVERT_BUF_FULL;
 
 	// Send Task
 		xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
@@ -602,14 +602,16 @@ bool Pop(ppg_mems_data_t *data)
 void Get_AR_ADC(void)
 {
 
-	for(uint8_t i =0; i<5;i++)
+	for(uint8_t i =0; i<ARY_SIZE;i++)
 	{
-	   /* channel 1 */
-	   DBG_DIRECT("adcConvertRes_HM[%d] = %d \n",i,adcConvertRes_HM[i]);
+	   DBG_DIRECT("adcConvertRes_HM[%d] = %d ",i,adcConvertRes_HM[i]);
+	   if(i%10 == 9)
+	   DBG_DIRECT("\n");
 	}
 	
    /* start adc convert again */
 				  
+	DBG_DIRECT(" ********************* \n");
 
  	return;
 	

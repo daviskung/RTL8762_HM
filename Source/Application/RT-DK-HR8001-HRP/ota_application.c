@@ -67,7 +67,7 @@ extern uint8_t heart_rate_value[];
 extern uint16_t heart_rate_size;
 
 extern uint16_t adcConvertRes_HM_cnt;
-extern uint16_t adcConvertRes_HM[5];
+extern uint16_t adcConvertRes_HM[ARY_SIZE];
 
 
 

@@ -69,7 +69,7 @@ uint8_t gHRMServiceId;
 
 
 extern xTimerHandle hPAH8001_Timer;
-extern uint16_t adcConvertRes_HM[5] = {0};
+extern uint16_t adcConvertRes_HM[ARY_SIZE] = {0};
 extern uint8_t	adcConvertRes_HM_cnt=0;
 
 

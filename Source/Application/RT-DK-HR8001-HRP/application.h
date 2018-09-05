@@ -14,6 +14,7 @@
 //#include "basic_definitions.h"
 #include "blueapi_types.h"
 
+#define ARY_SIZE		100
 
 extern void application_task_init(void);
 extern void appBlueAPICallback(PBlueAPI_UsMessage pMsg);
