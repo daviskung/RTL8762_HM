@@ -4,11 +4,6 @@
 #include "rtl876x.h"
 
 //--------------------------------------------------------------------------
-// I2C Addr
-//--------------------------------------------------------------------------
-#define PAH8001_ADR			0x57
-
-//--------------------------------------------------------------------------
 // Constant Define
 //--------------------------------------------------------------------------
 #define PXIALG_API
@@ -36,12 +31,52 @@
 #define HM_ADC_INTERVAL 		40    // 40
 #define HM_ADC_AR_TIMER_ID		3553
 
+#define HM_IR_PWM_INTERVAL 		100    // 40
+#define HM_IR_PWM_TIMER_ID		3554
+
+
 #define EVENT_START_HEARTRATE_CALCULATE 1
 #define EVENT_START_AR_ADC				2
 #define EVENT_ADC_CONVERT_BUF_FULL		3
 
 
 #define ARY_SIZE		100
+
+/* Defines ------------------------------------------------------------------*/
+#define TEST_Pin            P3_2
+#define GPIO_Test_Pin       GPIO_GetPin(TEST_Pin)
+
+#define KEY1_Pin            P0_1
+#define GPIO_KEY1_Pin       GPIO_GetPin(KEY1_Pin)
+
+#define KEY2_Pin            P0_2
+#define GPIO_KEY2_Pin       GPIO_GetPin(KEY2_Pin)
+
+/* Defines HM control pin ----------------------------*/
+#define NSTROBE_R1_Pin            P0_2
+#define GPIO_NSTROBE_R1_Pin       GPIO_GetPin(NSTROBE_R1_Pin)
+#define NSTROBE_R2_Pin            P0_3
+#define GPIO_NSTROBE_R2_Pin       GPIO_GetPin(NSTROBE_R2_Pin)
+#define NSTROBE_R3_Pin            P2_4
+#define GPIO_NSTROBE_R3_Pin       GPIO_GetPin(NSTROBE_R3_Pin)
+#define NSTROBE_R4_Pin            P2_5
+#define GPIO_NSTROBE_R4_Pin       GPIO_GetPin(NSTROBE_R4_Pin)
+
+#define NDISCH_Pin            P3_2
+#define GPIO_NDISCH_Pin       GPIO_GetPin(NDISCH_Pin)
+
+#define SAMP_Pin              P4_0
+#define GPIO_SAMP_Pin         GPIO_GetPin(SAMP_Pin)
+
+#define GCS_Pin               P4_1
+#define GPIO_GCS_Pin          GPIO_GetPin(GCS_Pin)
+
+#define GUD_Pin               P4_2
+#define GPIO_GUD_Pin          GPIO_GetPin(GUD_Pin)
+
+#define HM_ADC_AR               ADC_CH0
+#define HM_ADC_AN0              ADC_CH1
+#define HM_ADC_AN1              ADC_CH2
 
 
 
@@ -89,12 +124,9 @@ bool Pop(ppg_mems_data_t *data);
 
 void CalculateHeartRate(void);
 
-void PAH8001_Write(uint8_t Write_Addr, uint8_t Write_Data);
-void PAH8001_Read(uint8_t Read_Addr, uint8_t *Read_Data);
-void PAH8001_Burst_Read(uint8_t Read_Addr, uint8_t *Read_Data, uint8_t Read_Size);
-
 bool AR_ADC_CH1(void);
 void Get_AR_ADC(void);
+void HM_IR_PWM_FUN(void);
 
 
 

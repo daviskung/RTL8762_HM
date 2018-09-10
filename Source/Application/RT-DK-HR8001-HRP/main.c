@@ -71,6 +71,8 @@ uint8_t gHRMServiceId;
 extern xTimerHandle hPAH8001_Timer;
 extern uint16_t adcConvertRes_HM[ARY_SIZE] = {0};
 extern uint8_t	adcConvertRes_HM_cnt=0;
+extern uint8_t	HM_100ms_cnt=0;
+
 
 
 #define  GATT_UUID128_OTA_SERVICE_ADV	0x12, 0xA2, 0x4D, 0x2E, 0xFE, 0x14, 0x48, 0x8e, 0x93, 0xD2, 0x17, 0x3C, 0xFF, 0xD0, 0x00, 0x00
@@ -236,28 +238,100 @@ void Initialize_GPIO(void)
 	RCC_PeriphClockCmd(APBPeriph_GPIO, APBPeriph_GPIO_CLOCK, ENABLE);
 	
 	/* GPIO Pinmux Config */
-	Pinmux_Config(P2_0, GPIO_FUN);
+	
+	Pinmux_Config(NSTROBE_R1_Pin, GPIO_FUN);
+	//Pinmux_Config(NSTROBE_R2_Pin, GPIO_FUN);
+	Pinmux_Config(NSTROBE_R3_Pin, GPIO_FUN);
+	Pinmux_Config(NSTROBE_R4_Pin, GPIO_FUN);
+
+	Pinmux_Config(NDISCH_Pin, GPIO_FUN);
+	Pinmux_Config(SAMP_Pin	, GPIO_FUN);
+	Pinmux_Config(GCS_Pin	, GPIO_FUN);
+	Pinmux_Config(GUD_Pin	, GPIO_FUN);
+	
+	
+	//Pinmux_Config(KEY1_Pin	, GPIO_FUN);
 
 	/* GPIO Pad Config */
-	Pad_Config(P2_0, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_DISABLE, PAD_OUT_LOW);
 
+	Pad_Config(NSTROBE_R1_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	
+	//Pad_Config(NSTROBE_R2_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(NSTROBE_R3_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(NSTROBE_R4_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	
+	
+	Pad_Config(NDISCH_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(SAMP_Pin  , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	
+	Pad_Config(GCS_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(GUD_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	
+
+	
+	//Pad_Config(KEY1_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	
 	/* GPIO Parameter Config */
 	{
 		GPIO_InitTypeDef GPIO_InitStruct;
-
-		// PAH_INT
-		GPIO_InitStruct.GPIO_Pin = GPIO_GetPin(P2_0);
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_InitStruct.GPIO_ITCmd = ENABLE;
-		GPIO_InitStruct.GPIO_ITTrigger = GPIO_INT_Trigger_LEVEL;
-		GPIO_InitStruct.GPIO_ITPolarity = GPIO_INT_POLARITY_ACTIVE_HIGH;
-		GPIO_InitStruct.GPIO_ITDebounce = GPIO_INT_DEBOUNCE_ENABLE;
+		// TEST pin
+		GPIO_InitStruct.GPIO_Pin  = GPIO_SAMP_Pin;
+    	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_NDISCH_Pin;
+    	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
 
-		// Enable Interrupt
-		GPIO_ClearINTPendingBit(GPIO_GetPin(P2_0));
-		GPIO_INTConfig(GPIO_GetPin(P2_0), ENABLE);
-		GPIO_MaskINTConfig(GPIO_GetPin(P2_0), DISABLE);
+		GPIO_InitStruct.GPIO_Pin  = GPIO_GCS_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+
+		GPIO_InitStruct.GPIO_Pin  = GPIO_GUD_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		
+
+		/*
+		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY1_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+		GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY2_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+		GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		*/
+		
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R1_Pin;
+    	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+    	GPIO_Init(&GPIO_InitStruct);
+
+		/*
+		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R2_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		*/
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R3_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R4_Pin;
+		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+		GPIO_Init(&GPIO_InitStruct);
+
+		
 	}
 }
 
@@ -368,7 +442,7 @@ void Board_Init(void)
 {
 	All_Pad_Config_Default();
 
-	//Initialize_GPIO();
+	Initialize_GPIO();
 	//Initialize_I2C();
 	//Initialize_UART();
 	//Initialize_NVIC();

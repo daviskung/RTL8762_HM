@@ -47,6 +47,8 @@ gaprole_States_t gapProfileState = GAPSTATE_INIT;
 
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
+extern xTimerHandle hIR_PWM_Timer;
+
 
 
 /* import service id */

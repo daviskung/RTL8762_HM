@@ -30,9 +30,13 @@ extern bool HeartRateMonitorValueNotify(void);
 
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
+extern xTimerHandle hIR_PWM_Timer;
+
 
 extern uint16_t adcConvertRes_HM[ARY_SIZE];
 extern uint8_t	adcConvertRes_HM_cnt;
+extern uint8_t	HM_100ms_cnt;
+
 
 
 //--------------------------------------------------------------------------
@@ -59,65 +63,16 @@ uint16_t uTxCnt;
 
 float _myHR;
 
-
-
-/*--------------------------------------------------------------------------
-// Function name: PAH8001_Settings
-// Parameters: None
-// Return: None
-// Description: 
-// Send commands to set registers of the PAH8001.
---------------------------------------------------------------------------*/
-void PAH8001_Settings(void)
+void HM_IR_PWM_FUN(void)
 {
-	uint8_t TempByte;
+	HM_100ms_cnt++;
 
-	//Reset
-	PAH8001_Write(0x06,0x82);
-	delayMS(10);
-
-	PAH8001_Write(0x09,0x5A);
-	PAH8001_Write(0x05,0x99);
-
-	PAH8001_Read(0x17, &TempByte);
-	PAH8001_Write(0x17,TempByte|0x80);
-
-	PAH8001_Write(0x27,0xFF);
-	PAH8001_Write(0x28,0xFA);
-	PAH8001_Write(0x29,0x0A);
-	PAH8001_Write(0x2A,0xC8);
-	PAH8001_Write(0x2B,0xA0);
-	PAH8001_Write(0x2C,0x8C);
-	PAH8001_Write(0x2D,0x64);
-
-	PAH8001_Write(0x42,0x20);
-	PAH8001_Write(0x48,0x00);
-	PAH8001_Write(0x4D,0x1A);
-
-	PAH8001_Write(0x7A,0xB5);
-	PAH8001_Write(0x7F,0x01);
-	PAH8001_Write(0x07,0x48);
-	PAH8001_Write(0x23,0x3C);
-	PAH8001_Write(0x26,0x0F);
-	PAH8001_Write(0x2E,0x48);
-	PAH8001_Write(0x38,(DEFAULT_LED_STEP|0xE0));
-
-	PAH8001_Write(0x42,0xA4);
-	PAH8001_Write(0x43,0x41);
-	PAH8001_Write(0x44,0x41);
-	PAH8001_Write(0x45,0x24);
-	PAH8001_Write(0x46,0xC0);
-
-	PAH8001_Write(0x52,0x32);
-	PAH8001_Write(0x53,0x28);
-
-	PAH8001_Write(0x56,0x60);
-	PAH8001_Write(0x57,0x28);
-	PAH8001_Write(0x6D,0x02);
-	PAH8001_Write(0x0F,0xC8);
-	PAH8001_Write(0x7F,0x00);
-	PAH8001_Write(0x5D,0x81);
+	// Reset Timer 
+	xTimerReset(hIR_PWM_Timer, HM_IR_PWM_INTERVAL);
+	
+	return ;
 }
+
 
 
 /*--------------------------------------------------------------------------
@@ -133,7 +88,7 @@ bool AR_ADC_CH1(void)
 	//	_time_stamp++;
 
 	// Reset Timer 
-		xTimerReset(hADC_AR_CH1_Timer, HM_ADC_INTERVAL);
+	xTimerReset(hADC_AR_CH1_Timer, HM_ADC_INTERVAL);
 		//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  AR_ADC_CH1 timer ** ", 0);
 
 	//enable ADC read and wait for ADC data ready interrupt
@@ -146,6 +101,16 @@ bool AR_ADC_CH1(void)
     /*read sample result*/
     
 	adcConvertRes_HM_cnt++;
+
+	if(adcConvertRes_HM_cnt%2 == 1){
+		GPIO_SetBits(GPIO_NDISCH_Pin);
+		GPIO_ResetBits(GPIO_SAMP_Pin);
+	}
+	else{
+		GPIO_ResetBits(GPIO_NDISCH_Pin);
+		GPIO_SetBits(GPIO_SAMP_Pin);
+	}	
+	
 	if( adcConvertRes_HM_cnt >= ARY_SIZE ) adcConvertRes_HM_cnt=0;
     adcConvertRes_HM[adcConvertRes_HM_cnt] = ADC_Read(ADC, ADC_CH1);
 
@@ -317,7 +282,7 @@ void LED_Ctrl(void)
 	uint16_t _exposure_line;
 
 	// Disable Sleep Mode (Bank 0)
-	PAH8001_Write(0x05,0x98);		
+	//PAH8001_Write(0x05,0x98);		
 
 	if(_sleepflag == 1)
 	{
@@ -335,19 +300,19 @@ void LED_Ctrl(void)
 		_state_count = 0;
 
 		// Read Exposure Line
-		PAH8001_Read(0x32, &_ep_l);
-		PAH8001_Read(0x33, &_ep_h);
+		//PAH8001_Read(0x32, &_ep_l);
+		//PAH8001_Read(0x33, &_ep_h);
 		_exposure_line = (_ep_h<<8)+_ep_l;
 
 		// Change to Bank 1
-		PAH8001_Write(0x7F,0x01);
+		//PAH8001_Write(0x7F,0x01);
 
 		if(_state == 0)
 		{
 			if((_exposure_line >= LED_CTRL_EXPO_TIME_HI_BOUND)||(_exposure_line <= LED_CTRL_EXPO_TIME_LOW_BOUND))
 			{
 				// Read LED Step (Bank 1)
-				PAH8001_Read(0x38, &_led_step);
+				//PAH8001_Read(0x38, &_led_step);
 
 				_led_step &= 0x1F;
 
@@ -360,7 +325,7 @@ void LED_Ctrl(void)
 					if(_led_step > LED_CURRENT_HI)
 						_led_step = LED_CURRENT_HI;
 
-					PAH8001_Write(0x38,(_led_step|0xE0));
+					//PAH8001_Write(0x38,(_led_step|0xE0));
 
 					_led_current_change_flag = 1;
 				}
@@ -373,7 +338,7 @@ void LED_Ctrl(void)
 					else
 						_led_step = _led_step-LED_INC_DEC_STEP;
 
-					PAH8001_Write(0x38,(_led_step|0xE0));
+					//PAH8001_Write(0x38,(_led_step|0xE0));
 
 					_led_current_change_flag = 1;
 				}
@@ -402,7 +367,7 @@ void LED_Ctrl(void)
 				}
 
 				// Change LED Step (Bank 1)
-				PAH8001_Write(0x38,(_led_step|0xE0));
+				//PAH8001_Write(0x38,(_led_step|0xE0));
 
 				 _led_current_change_flag = 1;
 			}
@@ -428,7 +393,7 @@ void LED_Ctrl(void)
 				}
 
 				// Change LED Step (Bank 1)
-				PAH8001_Write(0x38,(_led_step|0xE0));
+				//PAH8001_Write(0x38,(_led_step|0xE0));
 
 				_led_current_change_flag = 1;
 			}     
@@ -450,12 +415,12 @@ void LED_Ctrl(void)
 void EnterSleepMode(void)
 {
 	// Enable Sleep Mode (Bank 0)
-	PAH8001_Write(0x7F,0x00);
-	PAH8001_Write(0x05,0xBC);
+	//PAH8001_Write(0x7F,0x00);
+	//PAH8001_Write(0x05,0xBC);
 
 	// Change LED Step (Bank 1)
-	PAH8001_Write(0x7F,0x01);
-	PAH8001_Write(0x38,(DEFAULT_LED_STEP|0xE0));
+	//PAH8001_Write(0x7F,0x01);
+	//PAH8001_Write(0x38,(DEFAULT_LED_STEP|0xE0));
 
 	// Set Suspend Mode
 	//STK8BA50_Write(REG_POWMODE, SUSPEND);
@@ -486,8 +451,8 @@ void EnterSleepMode(void)
 void ExitSleepMode(void)
 {
 	// Change LED Step (Bank 1)
-	PAH8001_Write(0x7F,0x01);
-	PAH8001_Write(0x38,(DEFAULT_LED_STEP|0xE0));
+	//PAH8001_Write(0x7F,0x01);
+	//PAH8001_Write(0x38,(DEFAULT_LED_STEP|0xE0));
 
 	// Set Normal Mode
 	//STK8BA50_Write(REG_POWMODE, NORMAL_PWR);
@@ -733,78 +698,4 @@ void CalculateHeartRate(void)
 	
 }
 
-
-/*--------------------------------------------------------------------------
-// Function name: PAH8001_Write
-// Parameters:
-// uint8_t Write_Addr - the address to be written to
-// uint8_t Write_Data - the data to be written to the specified address.
-// Return: None
-// Description:
---------------------------------------------------------------------------*/
-void PAH8001_Write(uint8_t Write_Addr, uint8_t Write_Data)
-{
-	uint8_t WriteBuf[2] = {Write_Addr, Write_Data};
-
-	if((I2C0->IC_TAR&0x3FF) != PAH8001_ADR)
-	{
-		// Delay for previous device to finish work
-		// Can not less than 300uS
-		delayUS(300);
-
-		// Change I2C Driver Address 
-		I2C_SetSlaveAddress(I2C0, PAH8001_ADR);
-	}
-
-	I2C_MasterWrite(I2C0, WriteBuf, 2);
-}
-
-
-/*--------------------------------------------------------------------------
-// Function name: PAH8001_Read
-// Parameters: 
-// uint8_t Read_Addr - the address to be read
-// uint8_t *Read_Data - the data buffer point
-// Return: None
-// Description:
-//--------------------------------------------------------------------------*/
-void PAH8001_Read(uint8_t Read_Addr, uint8_t *Read_Data)
-{
-	if((I2C0->IC_TAR&0x3FF) != PAH8001_ADR)
-	{
-		// Delay for previous device to finish work
-		// Can not less than 300uS
-		delayUS(300);
-
-		// Change I2C Driver Address 
-		I2C_SetSlaveAddress(I2C0, PAH8001_ADR);
-	}
-
-	I2C_RepeatRead(I2C0, &Read_Addr, 1, Read_Data, 1);
-}
-
-
-/*--------------------------------------------------------------------------
-// Function name: PAH8001_Burst_Read
-// Parameters:
-// uint8_t Read_Addr - the address to be read
-// uint8_t *Read_Data - the data buffer point
-// uint8_t Read_Size - the read szie 
-// Return: None
-// Description:
-//--------------------------------------------------------------------------*/
-void PAH8001_Burst_Read(uint8_t Read_Addr, uint8_t *Read_Data, uint8_t Read_Size)
-{
-	if((I2C0->IC_TAR&0x3FF) != PAH8001_ADR)
-	{
-		// Delay for previous device to finish work
-		// Can not less than 300uS
-		delayUS(300);
-
-		// Change I2C Driver Address 
-		I2C_SetSlaveAddress(I2C0, PAH8001_ADR);
-	}
-
-	I2C_RepeatRead(I2C0, &Read_Addr, 1, Read_Data, Read_Size);		
-}
 

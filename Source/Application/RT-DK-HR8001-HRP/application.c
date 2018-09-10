@@ -71,6 +71,8 @@ xQueueHandle hHeartRateQueueHandle = NULL;
 xTimerHandle hPAH8001_Timer = NULL;
 
 xTimerHandle hADC_AR_CH1_Timer = NULL;
+xTimerHandle hIR_PWM_Timer = NULL;
+
 
 // HM ckt initial --- start
 
@@ -255,6 +257,18 @@ void heartrate_task_app(void *pvParameters)
 
 	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **hADC_AR_CH1_Timer value = 0x%x \n", 1,hADC_AR_CH1_Timer);
 
+	/*
+	if(hIR_PWM_Timer == NULL)
+		{
+			hIR_PWM_Timer = xTimerCreate("HM_IR_PWM_TIMER", 		// Just a text name, not used by the kernel.
+											(HM_IR_PWM_INTERVAL /portTICK_RATE_MS), // The timer period in ticks. 
+											pdFALSE,						// The timers will auto-reload themselves when they expire.
+											(void *)HM_IR_PWM_TIMER_ID, 					// Assign each timer a unique id equal to its array index.
+											(TimerCallbackFunction_t) HM_IR_PWM_FUN);
+		}
+	
+	//DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **hADC_AR_CH1_Timer value = 0x%x \n", 1,hADC_AR_CH1_Timer);
+	*/
 
 	hHeartRateQueueHandle = xQueueCreate(MAX_HEARTRATE_TASK_COUNT, sizeof(uint8_t));	
 	
@@ -274,6 +288,11 @@ void heartrate_task_app(void *pvParameters)
 			}
 			
 		}
+
+		if ( GPIO_ReadOutputDataBit(KEY1_Pin) == SET )
+			DBG_BUFFER(MODULE_APP, LEVEL_INFO, " KEY1_Pin push !	\n", 0);
+			;
+		
 	}
 }
 

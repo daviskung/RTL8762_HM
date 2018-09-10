@@ -31,7 +31,7 @@ void BatteryMonitor_Init(void)
 
     /* use channel battery */
     //adcInitStruct.channelMap = ADC_CH_BAT;
-    adcInitStruct.channelMap = ADC_CH_BAT|ADC_CH0|ADC_CH1 ; 
+    adcInitStruct.channelMap = ADC_CH_BAT|ADC_CH0|ADC_CH1|ADC_CH2 ; 
 	
     ADC_Init(ADC, &adcInitStruct);
     ADC_INTConfig(ADC, ADC_INT_ONE_SHOT_DONE, ENABLE);
