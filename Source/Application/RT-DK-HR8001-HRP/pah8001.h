@@ -53,13 +53,13 @@
 #define GPIO_KEY2_Pin       GPIO_GetPin(KEY2_Pin)
 
 /* Defines HM control pin ----------------------------*/
-#define NSTROBE_R1_Pin            P0_2
+#define NSTROBE_R1_Pin            P1_2
 #define GPIO_NSTROBE_R1_Pin       GPIO_GetPin(NSTROBE_R1_Pin)
-#define NSTROBE_R2_Pin            P0_3
+#define NSTROBE_R2_Pin            P1_3
 #define GPIO_NSTROBE_R2_Pin       GPIO_GetPin(NSTROBE_R2_Pin)
-#define NSTROBE_R3_Pin            P2_4
+#define NSTROBE_R3_Pin            P0_6
 #define GPIO_NSTROBE_R3_Pin       GPIO_GetPin(NSTROBE_R3_Pin)
-#define NSTROBE_R4_Pin            P2_5
+#define NSTROBE_R4_Pin            P0_7
 #define GPIO_NSTROBE_R4_Pin       GPIO_GetPin(NSTROBE_R4_Pin)
 
 #define NDISCH_Pin            P3_2
