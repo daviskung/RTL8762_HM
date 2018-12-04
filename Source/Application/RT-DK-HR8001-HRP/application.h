@@ -20,6 +20,12 @@ extern void application_task_init(void);
 extern void appBlueAPICallback(PBlueAPI_UsMessage pMsg);
 
 
+extern uint8_t	NSTROBE_PWM_cnt;
+extern uint8_t	NSTROBE_LOW_EndSet;
+extern uint32_t GPIO_NSTROBE_value;
+
+
+
 
 #endif
 

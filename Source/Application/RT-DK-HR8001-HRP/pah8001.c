@@ -31,12 +31,15 @@ extern bool HeartRateMonitorValueNotify(void);
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
 extern xTimerHandle hIR_PWM_Timer;
+extern xTimerHandle hKEYscan_Timer;
+
 
 
 extern uint16_t adcConvertRes_HM[ARY_SIZE];
 extern uint8_t	adcConvertRes_HM_cnt;
 extern uint8_t	HM_100ms_cnt;
 
+UINT8 key_cnt;  // current setting
 
 
 //--------------------------------------------------------------------------
@@ -45,7 +48,7 @@ extern uint8_t	HM_100ms_cnt;
 ppg_mems_data_t _ppg_mems_data, hr_ppg_mems_data;
 ppg_mems_data_t __ppg_mems_data[FIFO_SIZE];
 
-uint8_t uTxBuf[128];
+
 
 uint8_t _frame_Count;
 uint8_t _led_step;
@@ -59,18 +62,21 @@ uint8_t _cnt_to_update_heart_rate;
 uint8_t update_cnt;
 uint8_t ready_flag;
 
-uint16_t uTxCnt;
+//uint16_t uTxCnt;
+//uint8_t uTxBuf[128];
+//float _myHR;
 
-float _myHR;
-
-void HM_IR_PWM_FUN(void)
+bool KEYscan_fun(void)
 {
-	HM_100ms_cnt++;
+	uint8_t _hr_event;
 
 	// Reset Timer 
-	xTimerReset(hIR_PWM_Timer, HM_IR_PWM_INTERVAL);
-	
-	return ;
+	xTimerReset(hKEYscan_Timer, KEYscan_Timer_INTERVAL);
+		_hr_event = EVENT_SCAN_KEY;
+
+	// Send Task
+	xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
+		return TRUE;
 }
 
 
@@ -102,14 +108,7 @@ bool AR_ADC_CH1(void)
     
 	adcConvertRes_HM_cnt++;
 
-	if(adcConvertRes_HM_cnt%2 == 1){
-		GPIO_SetBits(GPIO_NDISCH_Pin);
-		GPIO_ResetBits(GPIO_SAMP_Pin);
-	}
-	else{
-		GPIO_ResetBits(GPIO_NDISCH_Pin);
-		GPIO_SetBits(GPIO_SAMP_Pin);
-	}	
+	
 	
 	if( adcConvertRes_HM_cnt >= ARY_SIZE ) adcConvertRes_HM_cnt=0;
     adcConvertRes_HM[adcConvertRes_HM_cnt] = ADC_Read(ADC, ADC_CH1);
@@ -436,7 +435,7 @@ void EnterSleepMode(void)
 
 	_time_stamp = 0;
 
-	_myHR = 0;
+	//_myHR = 0;
 
 	_sleepflag = 1;
 }
@@ -600,6 +599,7 @@ void CalculateHeartRate(void)
 		
 		HeartRateServiceValueNotify();
 //		HeartRateMonitorValueNotify();
+
 	}
 	
 	
@@ -697,5 +697,6 @@ void CalculateHeartRate(void)
 #endif	
 	
 }
+
 
 

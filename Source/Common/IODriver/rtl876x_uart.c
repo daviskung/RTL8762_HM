@@ -108,10 +108,18 @@ void UART_DeInit(UART_TypeDef* UARTx)
   */
 void UART_StructInit(UART_InitTypeDef* UART_InitStruct)
 {
+	
     //115200 default
     UART_InitStruct->div            = 20;
     UART_InitStruct->ovsr           = 12;
     UART_InitStruct->ovsr_adj       = 0x252;
+
+	#if 0
+	 // 19,200 BaudRate
+    UART_InitStruct->div            = 165;
+    UART_InitStruct->ovsr           = 7;
+    UART_InitStruct->ovsr_adj       = 0x5AD;
+	#endif
 
     UART_InitStruct->parity         = UART_PARITY_NO_PARTY;
     UART_InitStruct->stopBits       = UART_STOP_BITS_1;

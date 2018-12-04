@@ -43,7 +43,16 @@
 #include "rtl876x_nvic.h"
 #include "rtl_delay.h"
 //#include "stk8ba50.h"
+
+#include "rtl876x_pwm.h"
+#include "rtl876x_pinmux.h"
 #include "pah8001.h"
+
+//#include "rtl876x_PWM.h"
+#include	"rtl876x_it.h"
+
+
+
 
 
 /*
@@ -52,6 +61,9 @@
 *
 *********************************************************
 */
+
+#define Timer2MsgControl	1
+
 // What is the advertising interval when device is discoverable. (units of 625us)
 #define MY_ADVERTISING_INTERVAL_MIN	0x190 /* 250ms */
 #define MY_ADVERTISING_INTERVAL_MAX	0x1B0 /* 270ms */
@@ -73,6 +85,21 @@ extern uint16_t adcConvertRes_HM[ARY_SIZE] = {0};
 extern uint8_t	adcConvertRes_HM_cnt=0;
 extern uint8_t	HM_100ms_cnt=0;
 
+extern uint8_t	NSTROBE_PWM_cnt=0;
+extern uint8_t	NSTROBE_LOW_EndSet=0;
+extern uint32_t GPIO_NSTROBE_value = 0;
+
+
+
+extern uint8_t PWM_chanEN_Number = 1; //NSTROBE_R1_Pin =1 ... NSTROBE_R4_Pin=4
+
+extern uint8_t RxEndFlag;
+/* globals */
+extern uint8_t RxBuffer[32];
+extern uint8_t RxCount;
+extern uint8_t RxEndFlag;
+
+//extern UINT8 AGC_MCP4011_Gain;  // current setting
 
 
 #define  GATT_UUID128_OTA_SERVICE_ADV	0x12, 0xA2, 0x4D, 0x2E, 0xFE, 0x14, 0x48, 0x8e, 0x93, 0xD2, 0x17, 0x3C, 0xFF, 0xD0, 0x00, 0x00
@@ -105,11 +132,15 @@ static uint8_t scanRspData[] =
 	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
 	'H', 'r', 't', 'D', 'e', 'm', 'o'
 	*/
-
+	
+	/* iOS藍牙設定裡顯示藍牙廣播裝置名稱 :
+		差異在SCAN response data加入HRS serive ID與否，
+		會在iOS的藍牙設定控制裡面顯示GAP device name. 
+		Android是直接顯示廣播的名稱。
 	0x14,	// Length
 	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
 	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','7','7','7','7'
-	
+	*/
 };
 
 
@@ -227,6 +258,55 @@ void BtProfile_Init(void)
 }
 
 
+
+/*TIM code---------------------------------------------------------------*/
+#if 0
+
+void TIM_InitConfiguration(void)
+{
+	TIM_TimeBaseInitTypeDef TIM_InitStruct;
+	GPIO_InitTypeDef GPIO_InitStruct;
+
+	NSTROBE_PWM_cnt=0;
+	NSTROBE_LOW_EndSet = NSTROBE_LOW_end ;
+	
+	RCC_PeriphClockCmd(APBPeriph_TIMER, APBPeriph_TIMER_CLOCK, ENABLE);
+	
+    GPIO_InitStruct.GPIO_Pin  = GPIO_GetPin(NSTROBE_R1_Pin);
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStruct.GPIO_ITCmd = DISABLE;
+	GPIO_InitStruct.GPIO_ITTrigger = GPIO_INT_Trigger_LEVEL;
+	GPIO_InitStruct.GPIO_ITPolarity = GPIO_INT_POLARITY_ACTIVE_HIGH;
+	GPIO_InitStruct.GPIO_ITDebounce = GPIO_INT_DEBOUNCE_DISABLE;
+    
+	GPIO_Init(&GPIO_InitStruct);
+	GPIO_SetBits(GPIO_GetPin(NSTROBE_R1_Pin));
+	GPIO_NSTROBE_value = SET;
+	
+    TIM_StructInit(&TIM_InitStruct);
+	TIM_InitStruct.TIM_ClockSrc = TIM_CLOCK_32KHZ;
+	TIM_InitStruct.TIM_Period = 16; 	// 31.25us/cnt
+	TIM_InitStruct.TIM_Mode = TIM_Mode_UserDefine;
+	TIM_TimeBaseInit(TIM_ID, &TIM_InitStruct);
+    
+	NVIC_InitTypeDef NVIC_InitStruct;
+	NVIC_InitStruct.NVIC_IRQChannel = TIMER2_IRQ;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
+
+	TIM_ClearINT(TIM_ID);
+    TIM_INTConfig(TIM_ID,ENABLE);
+	TIM_Cmd(TIM_ID, ENABLE);
+}
+void Initialize_TIM(void)
+{
+	TIM_InitConfiguration();
+}
+
+#endif
+
+
 /******************************************************************
  * @fn         Initial GPIO
  * @brief      GPIO input & output setting
@@ -239,101 +319,55 @@ void Initialize_GPIO(void)
 	
 	/* GPIO Pinmux Config */
 	
-	Pinmux_Config(NSTROBE_R1_Pin, GPIO_FUN);
-	//Pinmux_Config(NSTROBE_R2_Pin, GPIO_FUN);
-	Pinmux_Config(NSTROBE_R3_Pin, GPIO_FUN);
-	Pinmux_Config(NSTROBE_R4_Pin, GPIO_FUN);
-
-	Pinmux_Config(NDISCH_Pin, GPIO_FUN);
-	Pinmux_Config(SAMP_Pin	, GPIO_FUN);
-	Pinmux_Config(GCS_Pin	, GPIO_FUN);
-	Pinmux_Config(GUD_Pin	, GPIO_FUN);
+	//Pinmux_Config(LED1_Pin	, GPIO_FUN);
 	
+	Pinmux_Config(LED2_Pin	, GPIO_FUN);
+	Pinmux_Config(LED3_Pin	, GPIO_FUN);
 	
-	//Pinmux_Config(KEY1_Pin	, GPIO_FUN);
+	Pinmux_Config(KEY1_Pin	, GPIO_FUN);
+	Pinmux_Config(KEY2_Pin	, GPIO_FUN);
+	Pinmux_Config(KEY4_Pin	, GPIO_FUN);
 
 	/* GPIO Pad Config */
-
-	Pad_Config(NSTROBE_R1_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
 	
-	//Pad_Config(NSTROBE_R2_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(NSTROBE_R3_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(NSTROBE_R4_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	
-	
-	Pad_Config(NDISCH_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(SAMP_Pin  , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	
-	Pad_Config(GCS_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(GUD_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	//Pad_Config(LED1_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(LED2_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(LED3_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
 	
 
-	
-	//Pad_Config(KEY1_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(KEY1_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(KEY2_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(KEY4_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
 	
 	/* GPIO Parameter Config */
 	{
 		GPIO_InitTypeDef GPIO_InitStruct;
-		// TEST pin
-		GPIO_InitStruct.GPIO_Pin  = GPIO_SAMP_Pin;
+		
+		GPIO_InitStruct.GPIO_Pin  = GPIO_LED2_Pin|GPIO_LED3_Pin;
     	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
-		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_NDISCH_Pin;
-    	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-
-		GPIO_InitStruct.GPIO_Pin  = GPIO_GCS_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-
-		GPIO_InitStruct.GPIO_Pin  = GPIO_GUD_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-		
-
-		/*
-		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY1_Pin;
+				
+		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY1_Pin|GPIO_KEY2_Pin|GPIO_KEY4_Pin;
 		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY2_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-		*/
-		
-		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R1_Pin;
-    	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-    	GPIO_Init(&GPIO_InitStruct);
-
-		/*
-		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R2_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-		*/
-		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R3_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
-		GPIO_Init(&GPIO_InitStruct);
-		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_NSTROBE_R4_Pin;
-		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
 
+		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY4_Pin;
+		GPIO_InitStruct.GPIO_ITCmd = ENABLE;
+    	GPIO_InitStruct.GPIO_ITTrigger = GPIO_INT_Trigger_EDGE;
+	    GPIO_InitStruct.GPIO_ITPolarity = GPIO_INT_POLARITY_ACTIVE_LOW;
+	    GPIO_InitStruct.GPIO_ITDebounce = GPIO_INT_DEBOUNCE_ENABLE;  
 		
+	    GPIO_Init(&GPIO_InitStruct);
+	    GPIO_INTConfig(GPIO_KEY4_Pin, ENABLE);
+	    GPIO_MaskINTConfig(GPIO_KEY4_Pin, DISABLE);
+
+		DBG_BUFFER(MODULE_APP, LEVEL_INFO, " GPIO set OK !	\n", 0);
 	}
 }
+
+
 
 
 /******************************************************************
@@ -380,12 +414,12 @@ void Initialize_UART(void)
 	RCC_PeriphClockCmd(APBPeriph_UART, APBPeriph_UART_CLOCK, ENABLE);
 
 	/* UART Pinmux Config */
-	Pinmux_Config(P3_0, DATA_UART_TX);
-	Pinmux_Config(P3_1, DATA_UART_RX);
+	Pinmux_Config(DTAT_UART_TX_Pin, DATA_UART_TX);
+	Pinmux_Config(DTAT_UART_RX_Pin, DATA_UART_RX);
 
 	/* UART Pad Config */
-	Pad_Config(P3_0, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_HIGH);
-	Pad_Config(P3_1, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_HIGH);
+	Pad_Config(DTAT_UART_TX_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(DTAT_UART_RX_Pin, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
 
 	/* UART Parameter Config */ 
 	/* 115200-N-8-1 */
@@ -416,15 +450,20 @@ void Initialize_NVIC(void)
     
     NVIC_Init(&NVIC_InitStruct);
 	
-#if 0    // 暫不使用
     /* UART IRQ */
     NVIC_InitStruct.NVIC_IRQChannel = UART_IRQ;
     NVIC_InitStruct.NVIC_IRQChannelPriority = 1;
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     
     NVIC_Init(&NVIC_InitStruct);
-#endif    
 
+	
+    /* KEY1 IRQ */
+	NVIC_InitStruct.NVIC_IRQChannel = GPIO2_IRQ;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 1;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);  
+	
     return;
 }
 
@@ -443,9 +482,14 @@ void Board_Init(void)
 	All_Pad_Config_Default();
 
 	Initialize_GPIO();
+	
+	//InitGain(MIDGAIN);
+
+	//Initialize_TIM();
+	
 	//Initialize_I2C();
-	//Initialize_UART();
-	//Initialize_NVIC();
+	Initialize_UART();	
+	Initialize_NVIC();
 }
 
 
@@ -579,5 +623,6 @@ int main(void)
 	PwrMgr_Init();
 	Task_Init();
 	vTaskStartScheduler();
+
 	return 0;
 }

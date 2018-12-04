@@ -31,27 +31,58 @@
 #define HM_ADC_INTERVAL 		40    // 40
 #define HM_ADC_AR_TIMER_ID		3553
 
-#define HM_IR_PWM_INTERVAL 		100    // 40
-#define HM_IR_PWM_TIMER_ID		3554
+#define KEYscan_Timer_INTERVAL 	500    // 40
+#define KEYscan_Timer_ID		3554
 
 
 #define EVENT_START_HEARTRATE_CALCULATE 1
 #define EVENT_START_AR_ADC				2
 #define EVENT_ADC_CONVERT_BUF_FULL		3
+#define EVENT_SCAN_KEY					4
+#define EVENT_RxEndFlag_SET				5
+#define EVENT_KEY4_PUSH_SET				6
+#define EVENT_KEY4_RELEASE_SET			7
+
+
 
 
 #define ARY_SIZE		100
 
 /* Defines ------------------------------------------------------------------*/
-#define TEST_Pin            P3_2
-#define GPIO_Test_Pin       GPIO_GetPin(TEST_Pin)
+
+//#define LED1_Pin            P0_3	// LOG_UART_TX can not use
+//#define GPIO_LED1_Pin       GPIO_GetPin(LED1_Pin)
+
+#define LED2_Pin            P2_2	// AJ no work,ONLY AG & AK
+#define GPIO_LED2_Pin       GPIO_GetPin(LED2_Pin)
+
+#define LED3_Pin            P0_5
+#define GPIO_LED3_Pin       GPIO_GetPin(LED3_Pin)
+
 
 #define KEY1_Pin            P0_1
 #define GPIO_KEY1_Pin       GPIO_GetPin(KEY1_Pin)
+//#define GPIOTestIntrHandler Gpio1IntrHandler
+
 
 #define KEY2_Pin            P0_2
 #define GPIO_KEY2_Pin       GPIO_GetPin(KEY2_Pin)
 
+#define KEY4_Pin            P3_3
+#define GPIO_KEY4_Pin       GPIO_GetPin(KEY4_Pin)
+
+#define DTAT_UART_TX_Pin            P4_0
+#define DTAT_UART_RX_Pin            P4_1
+
+#define HCI_UART_TX_Pin            P3_0
+#define HCI_UART_RX_Pin            P3_1
+
+#define PWR_CONTROL_Pin            P3_2
+#define GPIO_PWR_CONTROL_Pin       GPIO_GetPin(PWR_CONTROL_Pin)
+
+
+
+#if 0
 /* Defines HM control pin ----------------------------*/
 #define NSTROBE_R1_Pin            P1_2
 #define GPIO_NSTROBE_R1_Pin       GPIO_GetPin(NSTROBE_R1_Pin)
@@ -74,9 +105,41 @@
 #define GUD_Pin               P4_2
 #define GPIO_GUD_Pin          GPIO_GetPin(GUD_Pin)
 
+
+
+#define NSTROBE_R1_control            GPIO_Pin_10
+#define NSTROBE_R2_control            GPIO_Pin_11
+#define NSTROBE_R3_control            GPIO_Pin_6
+#define NSTROBE_R4_control            GPIO_Pin_7
+
+#define NDISCH_control            GPIO_Pin_26
+#define SAMP_control              GPIO_Pin_28
+#define GCS_control               GPIO_Pin_29
+#define GUD_control               GPIO_Pin_30
+#endif
+
+#define key1_control               GPIO_Pin_1
+#define key2_control               GPIO_Pin_2
+#define key4_control               GPIO_Pin_27
+
+
 #define HM_ADC_AR               ADC_CH0
 #define HM_ADC_AN0              ADC_CH1
 #define HM_ADC_AN1              ADC_CH2
+
+
+#define MAXGAIN 63
+#define MINGAIN 0
+#define MIDGAIN 32
+
+
+/* TIM Defines ------------------------------------------------------------------*/
+#define TIM_ID                  TIM2
+
+#define NSTROBE_LOW_start		0
+#define NSTROBE_LOW_end			1
+
+
 
 
 
@@ -126,7 +189,18 @@ void CalculateHeartRate(void);
 
 bool AR_ADC_CH1(void);
 void Get_AR_ADC(void);
-void HM_IR_PWM_FUN(void);
+bool KEYscan_fun(void);
+
+
+void GainDelay (void);	// changing GUD or GCS requires a delay depending on digital pot chip
+void GainStepUp (void);
+void GainStepDown (void);
+void InitGain(UINT8 val);
+void GainUp (void);
+void GainDown (void);
+
+
+
 
 
 

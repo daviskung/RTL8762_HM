@@ -40,6 +40,7 @@
 #include "task.h"
 
 #include "timers.h"
+#include "rtl876x_uart.h"
 
 
 // gap state
@@ -47,7 +48,7 @@ gaprole_States_t gapProfileState = GAPSTATE_INIT;
 
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
-extern xTimerHandle hIR_PWM_Timer;
+extern xTimerHandle hKEYscan_Timer;
 
 
 
@@ -534,6 +535,8 @@ bool HeartRateMonitorValueNotify(void)
 TAppResult AppProfileCallback(uint8_t serviceID, void *pData)
 {
 	TAppResult appResult = AppResult_Success;
+	uint8_t uTxBuf[128];
+	uint16_t uTxCnt;
 
 	if(serviceID == ProfileAPI_ServiceUndefined)
 	{
@@ -680,12 +683,18 @@ TAppResult AppProfileCallback(uint8_t serviceID, void *pData)
 						is_heart_rate_service_notification_enabled = true;
 						xTimerStart(hPAH8001_Timer, 0);
 						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "profile callback HRS_NOTIFY_INDICATE_MEASUREMENT_VALUE_ENABLE\n", 0);
+
+						uTxCnt = sprintf((char *)uTxBuf, "EN1\n\r");	// 啟動 PIC 
+						UART_SendData(UART, uTxBuf, uTxCnt);
 					}
 					else if(pHrsCallbackData->msg_data.notification_indification_index == HRS_NOTIFY_INDICATE_MEASUREMENT_VALUE_DISABLE)
 					{
 						is_heart_rate_service_notification_enabled = false;
 						xTimerStop(hPAH8001_Timer, 0);
 						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "profile callback HRS_NOTIFY_INDICATE_MEASUREMENT_VALUE_DISABLE\n", 0);
+
+						uTxCnt = sprintf((char *)uTxBuf, "STP\n\r");	// 關閉 PIC 
+						UART_SendData(UART, uTxBuf, uTxCnt);
 					}
 				}
 				break;
