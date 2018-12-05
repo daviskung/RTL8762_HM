@@ -39,7 +39,6 @@ extern uint16_t adcConvertRes_HM[ARY_SIZE];
 extern uint8_t	adcConvertRes_HM_cnt;
 extern uint8_t	HM_100ms_cnt;
 
-UINT8 key_cnt;  // current setting
 
 
 //--------------------------------------------------------------------------
@@ -69,10 +68,11 @@ uint8_t ready_flag;
 bool KEYscan_fun(void)
 {
 	uint8_t _hr_event;
+	//uint8_t counter;
 
 	// Reset Timer 
 	xTimerReset(hKEYscan_Timer, KEYscan_Timer_INTERVAL);
-		_hr_event = EVENT_SCAN_KEY;
+		_hr_event = EVENT_SCAN_KEY_TIMER;
 
 	// Send Task
 	xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);

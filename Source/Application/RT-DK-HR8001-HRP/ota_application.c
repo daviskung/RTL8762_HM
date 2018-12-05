@@ -63,7 +63,7 @@ extern uint8_t gHRMServiceId;
 extern uint8_t advertData[] ;
 
 /* import heart rate */
-extern float _myHR;
+extern uint8_t _myHR;
 
 
 extern uint8_t heart_rate_value[];
@@ -454,7 +454,7 @@ void UpdateHeartRate(void)
  * @retval 0 FALSE
  * @retval 1 TRUE
 */
-uint16_t TempHeart = 100;
+uint16_t TempHeart;
 uint16_t	HeartRate_ENERGY_EXPENDED=0;
 uint16_t	HeartRate_RR_Interval=10;
 
@@ -479,9 +479,7 @@ bool HeartRateServiceValueNotify(void)
 
 	HRS_SetParameter(HRS_HEART_RATE_MEASUREMENT_PARAM_FLAG, 1, &hrs_flag);
 
-	//TempHeart = 100;   //(uint16_t)_myHR;
-	TempHeart++;
-	if(TempHeart >= 240)  TempHeart = 30;
+	TempHeart =(uint16_t)_myHR;
 	HeartRate_ENERGY_EXPENDED++;
 	HeartRate_RR_Interval++;
 	

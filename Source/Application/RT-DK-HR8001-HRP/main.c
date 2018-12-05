@@ -167,7 +167,7 @@ uint8_t advertData[] =
 
 	0x14,	// Length
 	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','7','7','7','7'
+	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','5','5','1','8'
 	
 };
 
@@ -319,40 +319,37 @@ void Initialize_GPIO(void)
 	
 	/* GPIO Pinmux Config */
 	
-	//Pinmux_Config(LED1_Pin	, GPIO_FUN);
+	Pinmux_Config(PWR_CONTROL_PIN	, GPIO_FUN);
+	Pinmux_Config(STATUS_LED_PIN	, GPIO_FUN);
 	
-	Pinmux_Config(LED2_Pin	, GPIO_FUN);
-	Pinmux_Config(LED3_Pin	, GPIO_FUN);
+	Pinmux_Config(S4_TEST_KEY_PIN	, GPIO_FUN);
+	Pinmux_Config(PWR_KEY_PIN	, GPIO_FUN);
 	
-	Pinmux_Config(KEY1_Pin	, GPIO_FUN);
-	Pinmux_Config(KEY2_Pin	, GPIO_FUN);
-	Pinmux_Config(KEY4_Pin	, GPIO_FUN);
 
 	/* GPIO Pad Config */
 	
 	//Pad_Config(LED1_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(LED2_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(LED3_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(STATUS_LED_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	Pad_Config(PWR_CONTROL_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
 	
 
-	Pad_Config(KEY1_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
-	Pad_Config(KEY2_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
-	Pad_Config(KEY4_Pin   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(S4_TEST_KEY_PIN   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(PWR_KEY_PIN   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
 	
 	/* GPIO Parameter Config */
 	{
 		GPIO_InitTypeDef GPIO_InitStruct;
 		
-		GPIO_InitStruct.GPIO_Pin  = GPIO_LED2_Pin|GPIO_LED3_Pin;
+		GPIO_InitStruct.GPIO_Pin  = STATUS_LED_PIN|PWR_CONTROL_PIN;
     	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
 				
-		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY1_Pin|GPIO_KEY2_Pin|GPIO_KEY4_Pin;
+		GPIO_InitStruct.GPIO_Pin  = PWR_KEY_PIN|S4_TEST_KEY_PIN;
 		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
-
+	#if 0
 		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY4_Pin;
 		GPIO_InitStruct.GPIO_ITCmd = ENABLE;
     	GPIO_InitStruct.GPIO_ITTrigger = GPIO_INT_Trigger_EDGE;
@@ -362,7 +359,7 @@ void Initialize_GPIO(void)
 	    GPIO_Init(&GPIO_InitStruct);
 	    GPIO_INTConfig(GPIO_KEY4_Pin, ENABLE);
 	    GPIO_MaskINTConfig(GPIO_KEY4_Pin, DISABLE);
-
+	#endif
 		DBG_BUFFER(MODULE_APP, LEVEL_INFO, " GPIO set OK !	\n", 0);
 	}
 }

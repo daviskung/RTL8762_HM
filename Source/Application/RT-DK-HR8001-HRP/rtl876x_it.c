@@ -118,7 +118,7 @@ void DataUartIntrHandler(void)
     
     return;
 }
-
+#if 0
 void Gpio27IntrHandler(void)	// P3_3 KEY4
 {
 	
@@ -142,5 +142,5 @@ void Gpio27IntrHandler(void)	// P3_3 KEY4
     GPIO_ClearINTPendingBit(GPIO_KEY4_Pin);
     GPIO_MaskINTConfig(GPIO_KEY4_Pin, DISABLE);
 }
-
+#endif
 

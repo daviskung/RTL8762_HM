@@ -50,7 +50,8 @@ extern void Driver_Init(void);
 extern uint8_t _touch_flag;
 extern uint8_t	NSTROBE_LOW_EndSet;
 
-extern UINT8 key_cnt;  // current setting
+UINT8 key_cnt,KEYscan_fun_cnt,cnt500ms;  // current setting
+
 extern uint8_t PWM_chanEN_Number;
 
 
@@ -63,11 +64,13 @@ uint8_t uRxCnt=30;
 
 
 uint8_t uTxBuf[128];
+uint8_t EnPICcmdBuf[5];
 uint8_t uGetFromPICBuf[9];
+
 
 uint16_t uTxCnt;
 
-float _myHR=100;
+uint8_t _myHR;
 
 
 /****************************************************************************/
@@ -139,11 +142,10 @@ void application_task_init()
 	/* enable interrupt again */
     UART_INTConfig(UART, UART_INT_RD_AVA | UART_INT_LINE_STS, ENABLE);
 	
-	GPIO_WriteBit(GPIO_LED2_Pin,Bit_RESET); // LED2 OFF
-	GPIO_WriteBit(GPIO_LED3_Pin,Bit_RESET); // LED3 OFF	
-    GPIO_ClearINTPendingBit(GPIO_KEY4_Pin);
-	GPIO_WriteBit(GPIO_PWR_CONTROL_Pin,Bit_SET); // PWR_CONTROL_Pin ON
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_Pin ON !\n", 0);
+	GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); // STATUS LED ON
+	
+	GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_SET); // PWR_CONTROL_PIN ON
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_PIN ON !\n", 0);
 }
 
 
@@ -244,15 +246,13 @@ void heartrate_task_app(void *pvParameters)
 	hHeartRateQueueHandle = xQueueCreate(MAX_HEARTRATE_TASK_COUNT, sizeof(uint8_t));	
 
 	xTimerStart(hKEYscan_Timer, 0);	
-	
-	//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**send RTL\r\n", 0);
-
-	_myHR++;
-	
+		
 	//uTxCnt = sprintf((char *)uTxBuf, "HR=%03.0f\n", _myHR);	
 	uTxCnt = sprintf((char *)uTxBuf, "RTL\n\r");	// RTL8762 開機完成,sprintf 回傳 字元len
 	UART_SendData(UART, uTxBuf, uTxCnt);
 	key_cnt = 0;
+	KEYscan_fun_cnt = 1;
+	cnt500ms = 0;
 	
 	while(true)
 	{
@@ -269,70 +269,71 @@ void heartrate_task_app(void *pvParameters)
 				Get_AR_ADC();
 			}
 
-			if(Event == EVENT_SCAN_KEY)
+			if(Event == EVENT_SCAN_KEY_TIMER)
 			{
-				#if 1
-				if( GPIO_ReadInputDataBit(key1_control) == RESET ){
-					key_cnt++;
-					DBG_BUFFER(MODULE_APP, LEVEL_INFO, " ** LED3 off/key1_control = %d \n", 1,key_cnt);
-					
-
-					GPIO_WriteBit(GPIO_LED2_Pin,Bit_RESET); // LED1 OFF
-					GPIO_WriteBit(GPIO_LED3_Pin,Bit_RESET); // LED1 OFF
-
-					
+				if((KEYscan_fun_cnt != 0)&&(cnt500ms%5 == 0)) {
+					EnPICcmdBuf[0]='E';
+					EnPICcmdBuf[1]='N';
+					EnPICcmdBuf[2]=KEYscan_fun_cnt+'0';
+					EnPICcmdBuf[3]='\n';
+					EnPICcmdBuf[4]='\r';
+					UART_SendData(UART, EnPICcmdBuf, 5);
+					KEYscan_fun_cnt++;
+					if(KEYscan_fun_cnt > 9) 
+						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PIC can NOT work \n", 0);
+						
 				}
-				#endif
+				cnt500ms++;
 		
-				if( GPIO_ReadInputDataBit(key2_control) == RESET ){				
+				if( GPIO_ReadInputDataBit(GPIO_S4_TEST_KEY_PIN) == RESET ){				
 					key_cnt++;
-					DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **LED3 ON/key2_control = %d \n", 1,key_cnt);
+					DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **S4_TEST_KEY = %d \n", 1,key_cnt);
 				
 					if(key_cnt%2 == 1) uTxCnt = sprintf((char *)uTxBuf, "STP\n\r");	// RTL8762 開機完成,sprintf 回傳 字元len
 					else uTxCnt = sprintf((char *)uTxBuf, "EN1\n\r");	
 					
 					UART_SendData(UART, uTxBuf, uTxCnt);
-
-					
-					GPIO_WriteBit(GPIO_LED2_Pin,Bit_SET); // LED1 ON
-					GPIO_WriteBit(GPIO_LED3_Pin,Bit_SET); // LED1 ON
-				}
-
-				#if 0
-				if( GPIO_ReadInputDataBit(key4_control) == RESET ){
-
-					DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **key4_control = %d \n", 1,key_cnt);
 					
 				}
-				#endif
 			
 			}
 
 			if( Event == EVENT_RxEndFlag_SET ){
 				
-				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** EVENT_RxEndFlag_SET \n", 0);
+				//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** EVENT_RxEndFlag_SET \n", 0);
 
 				/* rx end */
 				if(RxEndFlag == 1)
 				{
 					DBG_BUFFER(MODULE_APP, LEVEL_INFO, "RxCount = %d \n", 1,RxCount);
-				#if 0
-					if ( RxBuffer[0] == '2' )	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "2",0);
-					if ( RxBuffer[1] == 'R' )	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "R",0);
-					if ( RxBuffer[2] == 'T' )	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "T",0);
-					if ( RxBuffer[3] == 'L' )	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "L",0);
-				#endif
-
+				
 					if(RxCount == 15){
 						for (i = 0; i < 6; ++i){
 							uGetFromPICBuf[i] = RxBuffer[i+1];
 						}
-						
 						uGetFromPICBuf[6] = 'k';
 						uGetFromPICBuf[7] = '\n';
 						uGetFromPICBuf[8] = '\r';
 						UART_SendData(UART, uGetFromPICBuf, 9);
+
+						if((uGetFromPICBuf[0] == 'H') &&(uGetFromPICBuf[1] != '2') &&(uGetFromPICBuf[2] == '=')){
+							KEYscan_fun_cnt=0;
+							uGetFromPICBuf[3] = uGetFromPICBuf[3]-'0';
+							uGetFromPICBuf[4] = uGetFromPICBuf[4]-'0';
+							uGetFromPICBuf[5] = uGetFromPICBuf[5]-'0';
+							_myHR = uGetFromPICBuf[3] *100 + uGetFromPICBuf[4]*10 + uGetFromPICBuf[5];
+							
+							DBG_BUFFER(MODULE_APP, LEVEL_INFO, "_myHR = %d \n", 1,_myHR);
+						}
+						else if((uGetFromPICBuf[0] == 'H') &&(uGetFromPICBuf[1] == '2')){
+							DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H2 status", 0);
+							_myHR=0;
+							}
 					}
+					else if( RxCount == 7 ){
+						if((RxBuffer[1] == 'E') && (RxBuffer[2] == 'N') && (RxBuffer[3] == 'B'))
+							KEYscan_fun_cnt=0;
+						}
 					RxEndFlag = 0;
 					RxCount = 0;
 				}
