@@ -443,7 +443,7 @@ void UpdateBatteryLevel(void)
 
 void UpdateHeartRate(void)
 {
-	heart_rate_size = sprintf((char *)heart_rate_value, "HR=%03.0f\n", _myHR);
+	//heart_rate_size = sprintf((char *)heart_rate_value, "HR=%03.0f\n", _myHR);
 }
 
 

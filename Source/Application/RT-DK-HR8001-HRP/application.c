@@ -42,6 +42,7 @@
 #include "rtl876x_uart.h"
 
 
+uint8_t KEYscan_fun_cnt2;
 
 
 extern void AppHandleIODriverMessage(BEE_IO_MSG io_driver_msg_recv);
@@ -88,6 +89,8 @@ uint8_t _myHR;
 
  /* event */
 #define IO_DEMO_EVENT_ADC_CONVERT_END          0x01
+
+#define	PWR_KEY_OFF_TIME_SET	5	
 
 
 xTaskHandle  hOTAAppTaskHandle;
@@ -141,8 +144,9 @@ void application_task_init()
 
 	/* enable interrupt again */
     UART_INTConfig(UART, UART_INT_RD_AVA | UART_INT_LINE_STS, ENABLE);
-	
+
 	GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); // STATUS LED ON
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED_PIN ON !\n", 0);
 	
 	GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_SET); // PWR_CONTROL_PIN ON
 	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_PIN ON !\n", 0);
@@ -206,7 +210,7 @@ void heartrate_task_app(void *pvParameters)
 	
 //	uint8_t blkcount= 0;
 //    uint8_t remainder = 0;
-//    uint8_t strLen = 0;
+    uint8_t PWRkey_timer_cnt = 0;
     uint8_t i = 0;
 
 	if(hPAH8001_Timer == NULL)
@@ -245,14 +249,35 @@ void heartrate_task_app(void *pvParameters)
 
 	hHeartRateQueueHandle = xQueueCreate(MAX_HEARTRATE_TASK_COUNT, sizeof(uint8_t));	
 
+	
+	KEYscan_fun_cnt2 = 0;
 	xTimerStart(hKEYscan_Timer, 0);	
 		
 	//uTxCnt = sprintf((char *)uTxBuf, "HR=%03.0f\n", _myHR);	
 	uTxCnt = sprintf((char *)uTxBuf, "RTL\n\r");	// RTL8762 開機完成,sprintf 回傳 字元len
 	UART_SendData(UART, uTxBuf, uTxCnt);
 	key_cnt = 0;
-	KEYscan_fun_cnt = 1;
 	cnt500ms = 0;
+	i=0;
+	
+	// PWR_KEY Locked warning
+	while( GPIO_ReadInputDataBit(GPIO_PWR_KEY_PIN) == SET )
+	{
+		if(KEYscan_fun_cnt2 > 6){
+		if(KEYscan_fun_cnt2%2 == 0)
+			GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); // STATUS LED ON
+		else 
+			GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+		}
+	}
+	
+	GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); // STATUS LED ON
+	
+	// Turn On PWR_KEY INT
+	GPIO_INTConfig(GPIO_PWR_KEY_PIN, ENABLE);		
+	GPIO_MaskINTConfig(GPIO_PWR_KEY_PIN, DISABLE);
+
+	KEYscan_fun_cnt = 1;
 	
 	while(true)
 	{
@@ -295,7 +320,18 @@ void heartrate_task_app(void *pvParameters)
 					UART_SendData(UART, uTxBuf, uTxCnt);
 					
 				}
-			
+				
+				if( GPIO_ReadInputDataBit(GPIO_PWR_KEY_PIN) == SET ){	
+					if(PWRkey_timer_cnt < 100)
+						PWRkey_timer_cnt++;
+					DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **PWR_KEY = %d \n", 1,PWRkey_timer_cnt);
+					if (PWRkey_timer_cnt > PWR_KEY_OFF_TIME_SET)
+					{
+						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED off / PWR_CONTROL_PIN Off !!!\n", 0);
+						GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off						
+					}
+				}			
 			}
 
 			if( Event == EVENT_RxEndFlag_SET ){
@@ -338,15 +374,16 @@ void heartrate_task_app(void *pvParameters)
 					RxCount = 0;
 				}
 			}
-			if( Event == EVENT_KEY4_PUSH_SET ){
+			if( Event == EVENT_PWR_KEY_PUSH_SET ){
 				
-				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** EVENT_KEY4_PUSH_SET \n", 0);
+				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** EVENT_PWR_KEY_PUSH_SET \n", 0);
 				key_cnt++;
-				DBG_BUFFER(MODULE_APP, LEVEL_INFO, " key4 INT no. = %d \n", 1,key_cnt);
+				PWRkey_timer_cnt = 0;
+				DBG_BUFFER(MODULE_APP, LEVEL_INFO, " PWR_KEY INT cnt = %d / timer = %d \n", 2,key_cnt,PWRkey_timer_cnt);
 			}
-			if( Event == EVENT_KEY4_RELEASE_SET ){
+			if( Event == EVENT_PWR_KEY_RELEASE_SET ){
 				
-				DBG_BUFFER(MODULE_APP, LEVEL_INFO, " EVENT_KEY4_RELEASE_SET \n", 0);
+				DBG_BUFFER(MODULE_APP, LEVEL_INFO, " EVENT_PWR_KEY_RELEASE_SET \n", 0);
 				
 			}
 		

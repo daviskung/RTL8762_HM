@@ -328,38 +328,41 @@ void Initialize_GPIO(void)
 
 	/* GPIO Pad Config */
 	
-	//Pad_Config(LED1_Pin    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(STATUS_LED_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
-	Pad_Config(PWR_CONTROL_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_ENABLE, PAD_OUT_LOW);
+	// OUTPUT mode
+	Pad_Config(STATUS_LED_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_HIGH);
+	Pad_Config(PWR_CONTROL_PIN   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_ENABLE, PAD_OUT_HIGH);
 	
 
-	Pad_Config(S4_TEST_KEY_PIN   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
-	Pad_Config(PWR_KEY_PIN   , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(S4_TEST_KEY_PIN, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
+	Pad_Config(PWR_KEY_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_DOWN, PAD_OUT_DISABLE, PAD_OUT_LOW);
 	
 	/* GPIO Parameter Config */
 	{
 		GPIO_InitTypeDef GPIO_InitStruct;
 		
-		GPIO_InitStruct.GPIO_Pin  = STATUS_LED_PIN|PWR_CONTROL_PIN;
+		GPIO_InitStruct.GPIO_Pin  = GPIO_STATUS_LED_PIN|GPIO_PWR_CONTROL_PIN;
     	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
 				
-		GPIO_InitStruct.GPIO_Pin  = PWR_KEY_PIN|S4_TEST_KEY_PIN;
+		GPIO_InitStruct.GPIO_Pin  = GPIO_S4_TEST_KEY_PIN;
+		//GPIO_InitStruct.GPIO_Pin  = PWR_KEY_PIN|S4_TEST_KEY_PIN;
 		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
-	#if 0
-		GPIO_InitStruct.GPIO_Pin  = GPIO_KEY4_Pin;
+	
+		GPIO_InitStruct.GPIO_Pin  = GPIO_PWR_KEY_PIN;
+	    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
 		GPIO_InitStruct.GPIO_ITCmd = ENABLE;
     	GPIO_InitStruct.GPIO_ITTrigger = GPIO_INT_Trigger_EDGE;
-	    GPIO_InitStruct.GPIO_ITPolarity = GPIO_INT_POLARITY_ACTIVE_LOW;
+	    GPIO_InitStruct.GPIO_ITPolarity = GPIO_INT_POLARITY_ACTIVE_HIGH;
 	    GPIO_InitStruct.GPIO_ITDebounce = GPIO_INT_DEBOUNCE_ENABLE;  
-		
 	    GPIO_Init(&GPIO_InitStruct);
-	    GPIO_INTConfig(GPIO_KEY4_Pin, ENABLE);
-	    GPIO_MaskINTConfig(GPIO_KEY4_Pin, DISABLE);
-	#endif
+
+		// Turn Off INT frist
+	    GPIO_INTConfig(GPIO_PWR_KEY_PIN, DISABLE);		
+	    GPIO_MaskINTConfig(GPIO_PWR_KEY_PIN, ENABLE);
+	
 		DBG_BUFFER(MODULE_APP, LEVEL_INFO, " GPIO set OK !	\n", 0);
 	}
 }
@@ -455,8 +458,8 @@ void Initialize_NVIC(void)
     NVIC_Init(&NVIC_InitStruct);
 
 	
-    /* KEY1 IRQ */
-	NVIC_InitStruct.NVIC_IRQChannel = GPIO2_IRQ;
+    /* PWR_KEY IRQ */
+	NVIC_InitStruct.NVIC_IRQChannel = GPIO6To31_IRQ;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 1;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);  

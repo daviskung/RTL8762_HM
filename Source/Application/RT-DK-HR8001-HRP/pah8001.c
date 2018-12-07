@@ -37,7 +37,7 @@ extern xTimerHandle hKEYscan_Timer;
 
 extern uint16_t adcConvertRes_HM[ARY_SIZE];
 extern uint8_t	adcConvertRes_HM_cnt;
-extern uint8_t	HM_100ms_cnt;
+extern uint8_t	KEYscan_fun_cnt2;
 
 
 
@@ -73,7 +73,7 @@ bool KEYscan_fun(void)
 	// Reset Timer 
 	xTimerReset(hKEYscan_Timer, KEYscan_Timer_INTERVAL);
 		_hr_event = EVENT_SCAN_KEY_TIMER;
-
+	KEYscan_fun_cnt2++;
 	// Send Task
 	xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
 		return TRUE;

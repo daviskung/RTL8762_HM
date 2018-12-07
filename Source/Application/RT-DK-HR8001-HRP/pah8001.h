@@ -40,8 +40,10 @@
 #define EVENT_ADC_CONVERT_BUF_FULL		3
 #define EVENT_SCAN_KEY_TIMER			4
 #define EVENT_RxEndFlag_SET				5
-#define EVENT_KEY4_PUSH_SET				6
-#define EVENT_KEY4_RELEASE_SET			7
+#define EVENT_PWR_KEY_PUSH_SET			6
+#define EVENT_PWR_KEY_RELEASE_SET		7
+
+
 
 
 
@@ -61,9 +63,12 @@
 #define GPIO_PWR_KEY_PIN       GPIO_GetPin(PWR_KEY_PIN)
 //#define GPIOTestIntrHandler Gpio1IntrHandler
 
-
 #define STATUS_LED_PIN            P0_2
 #define GPIO_STATUS_LED_PIN       GPIO_GetPin(STATUS_LED_PIN)
+
+#define PWR_CONTROL_PIN            P3_2
+#define GPIO_PWR_CONTROL_PIN       GPIO_GetPin(PWR_CONTROL_PIN)
+
 
 #define DTAT_UART_TX_Pin            P4_0
 #define DTAT_UART_RX_Pin            P4_1
@@ -71,12 +76,6 @@
 #define HCI_UART_TX_Pin            P3_0
 #define HCI_UART_RX_Pin            P3_1
 
-#define PWR_CONTROL_PIN            P3_2
-#define GPIO_PWR_CONTROL_PIN       GPIO_GetPin(PWR_CONTROL_PIN)
-
-#define key1_control               GPIO_Pin_1
-#define key2_control               GPIO_Pin_2
-#define key4_control               GPIO_Pin_27
 
 
 #define HM_ADC_AR               ADC_CH0

@@ -144,3 +144,31 @@ void Gpio27IntrHandler(void)	// P3_3 KEY4
 }
 #endif
 
+
+void Gpio31IntrHandler(void)	// P4_3 S2 PWR_KEY
+{
+	
+	uint8_t _hr_event;
+	
+	uint8_t PwrKeyStatus;
+    GPIO_MaskINTConfig(GPIO_PWR_KEY_PIN, ENABLE);
+    
+    PwrKeyStatus = GPIO_ReadInputDataBit(GPIO_PWR_KEY_PIN);
+    if (PwrKeyStatus == SET)
+    {
+       // Send Task
+		_hr_event = EVENT_PWR_KEY_PUSH_SET;
+		xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
+    }
+    else
+    {
+        // Send Task
+		_hr_event = EVENT_PWR_KEY_RELEASE_SET;
+		xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
+    }
+    
+    GPIO_ClearINTPendingBit(GPIO_PWR_KEY_PIN);
+    GPIO_MaskINTConfig(GPIO_PWR_KEY_PIN, DISABLE);
+}
+
+
