@@ -323,7 +323,9 @@ void Initialize_GPIO(void)
 	Pinmux_Config(STATUS_LED_PIN	, GPIO_FUN);
 	
 	Pinmux_Config(S4_TEST_KEY_PIN	, GPIO_FUN);
-	Pinmux_Config(PWR_KEY_PIN	, GPIO_FUN);
+	Pinmux_Config(PWR_KEY_PIN		, GPIO_FUN);
+	
+	Pinmux_Config(USB_V5_IN_PIN		, GPIO_FUN);
 	
 
 	/* GPIO Pad Config */
@@ -335,6 +337,8 @@ void Initialize_GPIO(void)
 
 	Pad_Config(S4_TEST_KEY_PIN, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP, PAD_OUT_DISABLE, PAD_OUT_LOW);
 	Pad_Config(PWR_KEY_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_DOWN, PAD_OUT_DISABLE, PAD_OUT_LOW);
+
+	Pad_Config(USB_V5_IN_PIN    , PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_DISABLE, PAD_OUT_LOW);
 	
 	/* GPIO Parameter Config */
 	{
@@ -345,8 +349,7 @@ void Initialize_GPIO(void)
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);
 				
-		GPIO_InitStruct.GPIO_Pin  = GPIO_S4_TEST_KEY_PIN;
-		//GPIO_InitStruct.GPIO_Pin  = PWR_KEY_PIN|S4_TEST_KEY_PIN;
+		GPIO_InitStruct.GPIO_Pin  = GPIO_S4_TEST_KEY_PIN|GPIO_USB_V5_IN_PIN;
 		GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
 	    GPIO_InitStruct.GPIO_ITCmd = DISABLE;
 		GPIO_Init(&GPIO_InitStruct);

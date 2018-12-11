@@ -150,6 +150,12 @@ void application_task_init()
 	
 	GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_SET); // PWR_CONTROL_PIN ON
 	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_PIN ON !\n", 0);
+
+	
+	if( GPIO_ReadInputDataBit(GPIO_USB_V5_IN_PIN) == SET )
+		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** USB 5V plugin!\n", 0);
+	else 
+		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Battery power ON !\n", 0);
 }
 
 

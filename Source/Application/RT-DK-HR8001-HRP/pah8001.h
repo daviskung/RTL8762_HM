@@ -59,16 +59,18 @@
 #define GPIO_S4_TEST_KEY_PIN       GPIO_GetPin(S4_TEST_KEY_PIN)
 //#define GPIOTestIntrHandler Gpio1IntrHandler
 
-#define PWR_KEY_PIN            P4_3
-#define GPIO_PWR_KEY_PIN       GPIO_GetPin(PWR_KEY_PIN)
+#define PWR_KEY_PIN                P4_3
+#define GPIO_PWR_KEY_PIN           GPIO_GetPin(PWR_KEY_PIN)
 //#define GPIOTestIntrHandler Gpio1IntrHandler
 
-#define STATUS_LED_PIN            P0_2
-#define GPIO_STATUS_LED_PIN       GPIO_GetPin(STATUS_LED_PIN)
+#define STATUS_LED_PIN             P0_2
+#define GPIO_STATUS_LED_PIN        GPIO_GetPin(STATUS_LED_PIN)
 
 #define PWR_CONTROL_PIN            P3_2
 #define GPIO_PWR_CONTROL_PIN       GPIO_GetPin(PWR_CONTROL_PIN)
 
+#define USB_V5_IN_PIN              P2_7
+#define GPIO_USB_V5_IN_PIN         GPIO_GetPin(USB_V5_IN_PIN)
 
 #define DTAT_UART_TX_Pin            P4_0
 #define DTAT_UART_RX_Pin            P4_1
