@@ -66,7 +66,8 @@ uint8_t uRxCnt=30;
 
 uint8_t uTxBuf[128];
 uint8_t EnPICcmdBuf[5];
-uint8_t uGetFromPICBuf[9];
+//uint8_t uGetFromPICBuf[9];
+uint8_t uGetFromPICBuf[7];
 
 
 uint16_t uTxCnt;
@@ -353,10 +354,10 @@ void heartrate_task_app(void *pvParameters)
 						for (i = 0; i < 6; ++i){
 							uGetFromPICBuf[i] = RxBuffer[i+1];
 						}
-						uGetFromPICBuf[6] = 'k';
-						uGetFromPICBuf[7] = '\n';
-						uGetFromPICBuf[8] = '\r';
-						UART_SendData(UART, uGetFromPICBuf, 9);
+						uGetFromPICBuf[6] = '-';
+						//uGetFromPICBuf[7] = '\n';
+						//uGetFromPICBuf[8] = '\r';
+						UART_SendData(UART, uGetFromPICBuf, 7);
 
 						if((uGetFromPICBuf[0] == 'H') &&(uGetFromPICBuf[1] != '2') &&(uGetFromPICBuf[2] == '=')){
 							KEYscan_fun_cnt=0;
