@@ -44,8 +44,8 @@
 #define EVENT_PWR_KEY_RELEASE_SET		7
 
 
-
-
+#define USB_5V_IN_SET	1
+#define BAT_IN_SET		2
 
 
 #define ARY_SIZE		100

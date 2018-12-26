@@ -74,6 +74,9 @@ uint16_t uTxCnt;
 
 uint8_t _myHR;
 
+uint8_t NoSignalShutdownCnt;
+
+
 
 /****************************************************************************/
 /* Events                                                                   */
@@ -148,15 +151,16 @@ void application_task_init()
 
 	GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); // STATUS LED ON
 	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED_PIN ON !\n", 0);
-	
-	GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_SET); // PWR_CONTROL_PIN ON
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_PIN ON !\n", 0);
 
-	
 	if( GPIO_ReadInputDataBit(GPIO_USB_V5_IN_PIN) == SET )
 		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** USB 5V plugin!\n", 0);
-	else 
+	else
+	{
 		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Battery power ON !\n", 0);
+		GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_SET); // PWR_CONTROL_PIN ON
+		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** PWR_CONTROL_PIN ON !\n", 0);
+	}
+	
 }
 
 
@@ -285,6 +289,9 @@ void heartrate_task_app(void *pvParameters)
 	GPIO_MaskINTConfig(GPIO_PWR_KEY_PIN, DISABLE);
 
 	KEYscan_fun_cnt = 1;
+	NoSignalShutdownCnt = 0;
+	
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " Ver. %d-%d b \n", 2,12,26);
 	
 	while(true)
 	{
@@ -338,7 +345,8 @@ void heartrate_task_app(void *pvParameters)
 						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED off / PWR_CONTROL_PIN Off !!!\n", 0);
 						GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off						
 					}
-				}			
+				}
+
 			}
 
 			if( Event == EVENT_RxEndFlag_SET ){
@@ -348,7 +356,7 @@ void heartrate_task_app(void *pvParameters)
 				/* rx end */
 				if(RxEndFlag == 1)
 				{
-					DBG_BUFFER(MODULE_APP, LEVEL_INFO, "RxCount = %d \n", 1,RxCount);
+					//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "RxCount = %d \n", 1,RxCount);
 				
 					if(RxCount == 15){
 						for (i = 0; i < 6; ++i){
@@ -359,19 +367,51 @@ void heartrate_task_app(void *pvParameters)
 						//uGetFromPICBuf[8] = '\r';
 						UART_SendData(UART, uGetFromPICBuf, 7);
 
-						if((uGetFromPICBuf[0] == 'H') &&(uGetFromPICBuf[1] != '2') &&(uGetFromPICBuf[2] == '=')){
-							KEYscan_fun_cnt=0;
-							uGetFromPICBuf[3] = uGetFromPICBuf[3]-'0';
-							uGetFromPICBuf[4] = uGetFromPICBuf[4]-'0';
-							uGetFromPICBuf[5] = uGetFromPICBuf[5]-'0';
-							_myHR = uGetFromPICBuf[3] *100 + uGetFromPICBuf[4]*10 + uGetFromPICBuf[5];
-							
-							DBG_BUFFER(MODULE_APP, LEVEL_INFO, "_myHR = %d \n", 1,_myHR);
-						}
-						else if((uGetFromPICBuf[0] == 'H') &&(uGetFromPICBuf[1] == '2')){
-							DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H2 status", 0);
-							_myHR=0;
+						if(uGetFromPICBuf[0] == 'H'){
+							switch (uGetFromPICBuf[1])
+							{
+								case '0' : 
+								case '1' : 
+									KEYscan_fun_cnt=0;
+									uGetFromPICBuf[3] = uGetFromPICBuf[3]-'0';
+									uGetFromPICBuf[4] = uGetFromPICBuf[4]-'0';
+									uGetFromPICBuf[5] = uGetFromPICBuf[5]-'0';
+									_myHR = uGetFromPICBuf[3] *100 + uGetFromPICBuf[4]*10 + uGetFromPICBuf[5];
+
+									if(( _myHR > 40 ) && ( _myHR < 210 )){											
+										NoSignalShutdownCnt=0;
+										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H%d_myHR = %d \n", 2,(uGetFromPICBuf[1]-'0'),_myHR);
+									}
+									else 
+									{										
+										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "-> HR out of Range %d", 1,NoSignalShutdownCnt);
+										NoSignalShutdownCnt++;
+										_myHR=0;
+									}
+					        			break; 
+								case '2' :
+									NoSignalShutdownCnt++;
+									DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H2 status %d", 1,NoSignalShutdownCnt);
+									_myHR=0;
+										break; 
+								case '3' :
+									
+									NoSignalShutdownCnt=21;
+									DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H3 status-> No signal %d",1,NoSignalShutdownCnt);
+									_myHR=0;
+										break; 
+								default:
+										break;
+														
 							}
+							if( NoSignalShutdownCnt > 20 ){
+								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "< No Signal Shutdown >",0);
+								GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED off / PWR_CONTROL_PIN Off !!!\n", 0);
+								GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off	
+							}
+
+						}
 					}
 					else if( RxCount == 7 ){
 						if((RxBuffer[1] == 'E') && (RxBuffer[2] == 'N') && (RxBuffer[3] == 'B'))
