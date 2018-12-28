@@ -67,12 +67,13 @@ uint8_t uRxCnt=30;
 uint8_t uTxBuf[128];
 uint8_t EnPICcmdBuf[5];
 //uint8_t uGetFromPICBuf[9];
-uint8_t uGetFromPICBuf[7];
+uint8_t uGetFromPICBuf[10];
 
 
 uint16_t uTxCnt;
 
 uint8_t _myHR;
+uint8_t AGC_MCP4011_Gain;
 
 uint8_t NoSignalShutdownCnt;
 
@@ -220,7 +221,7 @@ void heartrate_task_app(void *pvParameters)
 	uint8_t Event;
 	
 //	uint8_t blkcount= 0;
-//    uint8_t remainder = 0;
+    uint8_t indexFromPIC = 0;
     uint8_t PWRkey_timer_cnt = 0;
     uint8_t i = 0;
 
@@ -291,7 +292,7 @@ void heartrate_task_app(void *pvParameters)
 	KEYscan_fun_cnt = 1;
 	NoSignalShutdownCnt = 0;
 	
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " Ver. %d-%d b \n", 2,12,26);
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " Ver. %d-%d b \n",2,12,28);
 	
 	while(true)
 	{
@@ -356,54 +357,50 @@ void heartrate_task_app(void *pvParameters)
 				/* rx end */
 				if(RxEndFlag == 1)
 				{
-					//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "RxCount = %d \n", 1,RxCount);
+				//	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "RxCount = %d \n", 1,RxCount);
 				
-					if(RxCount == 15){
-						for (i = 0; i < 6; ++i){
-							uGetFromPICBuf[i] = RxBuffer[i+1];
+					if(RxCount == 11){
+						for (i = 0; i < 9; ++i){
+							uGetFromPICBuf[i] = RxBuffer[i];
 						}
-						uGetFromPICBuf[6] = '-';
-						//uGetFromPICBuf[7] = '\n';
-						//uGetFromPICBuf[8] = '\r';
-						UART_SendData(UART, uGetFromPICBuf, 7);
+						uGetFromPICBuf[9] = '-';
+
+						UART_SendData(UART, uGetFromPICBuf, 10); // Debug out msg
 
 						if(uGetFromPICBuf[0] == 'H'){
-							switch (uGetFromPICBuf[1])
+							indexFromPIC = uGetFromPICBuf[1]-'0';
+							if(indexFromPIC == 2)
 							{
-								case '0' : 
-								case '1' : 
+								NoSignalShutdownCnt++;
+								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H2 status %d", 1,NoSignalShutdownCnt);
+									_myHR=0;
+							}
+							else if((indexFromPIC == 0) || (indexFromPIC == 1))
+							{
 									KEYscan_fun_cnt=0;
 									uGetFromPICBuf[3] = uGetFromPICBuf[3]-'0';
 									uGetFromPICBuf[4] = uGetFromPICBuf[4]-'0';
-									uGetFromPICBuf[5] = uGetFromPICBuf[5]-'0';
-									_myHR = uGetFromPICBuf[3] *100 + uGetFromPICBuf[4]*10 + uGetFromPICBuf[5];
+									
+									uGetFromPICBuf[6] = uGetFromPICBuf[6]-'0';
+									uGetFromPICBuf[7] = uGetFromPICBuf[7]-'0';
+									uGetFromPICBuf[8] = uGetFromPICBuf[8]-'0';
+									_myHR = uGetFromPICBuf[6] *100 + uGetFromPICBuf[7]*10 + uGetFromPICBuf[8];
+									AGC_MCP4011_Gain = uGetFromPICBuf[3]*10 + uGetFromPICBuf[4];
 
 									if(( _myHR > 40 ) && ( _myHR < 210 )){											
 										NoSignalShutdownCnt=0;
-										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H%d_myHR = %d \n", 2,(uGetFromPICBuf[1]-'0'),_myHR);
+										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H%d_myHR = %d,Gain = %d \n", 3,indexFromPIC,_myHR,AGC_MCP4011_Gain);
 									}
 									else 
 									{										
-										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "-> HR out of Range %d", 1,NoSignalShutdownCnt);
+										DBG_BUFFER(MODULE_APP, LEVEL_INFO, "-> HR out of Range %d , Gain = %d", 2,NoSignalShutdownCnt,AGC_MCP4011_Gain);
 										NoSignalShutdownCnt++;
+										if(AGC_MCP4011_Gain > 58)
+											NoSignalShutdownCnt++;
 										_myHR=0;
 									}
-					        			break; 
-								case '2' :
-									NoSignalShutdownCnt++;
-									DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H2 status %d", 1,NoSignalShutdownCnt);
-									_myHR=0;
-										break; 
-								case '3' :
-									
-									NoSignalShutdownCnt=21;
-									DBG_BUFFER(MODULE_APP, LEVEL_INFO, "H3 status-> No signal %d",1,NoSignalShutdownCnt);
-									_myHR=0;
-										break; 
-								default:
-										break;
-														
-							}
+					        }
+							
 							if( NoSignalShutdownCnt > 20 ){
 								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "< No Signal Shutdown >",0);
 								GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
@@ -413,10 +410,10 @@ void heartrate_task_app(void *pvParameters)
 
 						}
 					}
-					else if( RxCount == 7 ){
-						if((RxBuffer[1] == 'E') && (RxBuffer[2] == 'N') && (RxBuffer[3] == 'B'))
+					else if( RxCount == 6 ){
+						if((RxBuffer[0] == 'E') && (RxBuffer[1] == 'N') && (RxBuffer[2] == 'B'))
 							KEYscan_fun_cnt=0;
-						}
+					}
 					RxEndFlag = 0;
 					RxCount = 0;
 				}

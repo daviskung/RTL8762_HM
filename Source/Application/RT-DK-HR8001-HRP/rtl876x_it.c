@@ -82,8 +82,8 @@ void DataUartIntrHandler(void)
 
         /* rx data valiable */
         case UART_INT_ID_RX_LEVEL_REACH:
-            UART_ReceiveData(UART, &RxBuffer[RxCount], 14);
-            RxCount+= 14;
+            UART_ReceiveData(UART, &RxBuffer[RxCount], 1); // 是資料 分隔 的 數量
+            RxCount+= 1;
             break;
         
         case UART_INT_ID_RX_TMEOUT:
@@ -92,9 +92,8 @@ void DataUartIntrHandler(void)
                 RxBuffer[RxCount] = UART_ReceiveByte(UART);
                 RxCount++;
             }
-            //if((RxBuffer[RxCount] == '\r') && (RxBuffer[RxCount-1] == '\n'))
-				
-            if(RxBuffer[RxCount-1] == '\r') 
+            //if((RxBuffer[RxCount-1] == '\r') && (RxBuffer[RxCount-2] == '\n'))
+			if((RxBuffer[RxCount-1] == '\n') && (RxBuffer[RxCount-2] == '\r'))
 			{
                 RxEndFlag = 1;
 				
