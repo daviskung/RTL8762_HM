@@ -45,6 +45,7 @@
 
 // gap state
 gaprole_States_t gapProfileState = GAPSTATE_INIT;
+extern xQueueHandle hHeartRateQueueHandle;
 
 extern xTimerHandle hPAH8001_Timer;
 extern xTimerHandle hADC_AR_CH1_Timer;
@@ -126,7 +127,8 @@ void AppHandleIODriverMessage(BEE_IO_MSG io_driver_msg_recv)
  */
 void peripheral_HandleBtGapStateChangeEvt(uint8_t newState)
 {
-
+	
+	uint8_t _hr_event;
     switch ( newState )
     {
         //connection is disconnected or idle with no advertising
@@ -152,14 +154,18 @@ void peripheral_HandleBtGapStateChangeEvt(uint8_t newState)
         //device is advertising
         case GAPSTATE_ADVERTISING:
             {
-
+				_hr_event = EVENT_GAPSTATE_ADVERTISING;
+				// Send Task
+				xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
             }
             break;
 
         //device is connected
         case GAPSTATE_CONNECTED:
             {
-
+				_hr_event = EVENT_GAPSTATE_CONNECTED;
+				// Send Task
+				xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
             }
             break;
 

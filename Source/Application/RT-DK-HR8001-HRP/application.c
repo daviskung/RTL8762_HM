@@ -220,7 +220,7 @@ void heartrate_task_app(void *pvParameters)
 {
 	uint8_t Event;
 	
-//	uint8_t blkcount= 0;
+	uint8_t BTconnectState= 0;
     uint8_t indexFromPIC = 0;
     uint8_t PWRkey_timer_cnt = 0;
     uint8_t i = 0;
@@ -309,6 +309,21 @@ void heartrate_task_app(void *pvParameters)
 				Get_AR_ADC();
 			}
 
+			if(Event == EVENT_GAPSTATE_ADVERTISING)
+			{
+				BTconnectState = EVENT_GAPSTATE_ADVERTISING;
+				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Into EVENT_GAPSTATE_ADVERTISING !  \n", 0);
+			}
+
+			if(Event == EVENT_GAPSTATE_CONNECTED)
+			{
+				BTconnectState = EVENT_GAPSTATE_CONNECTED;
+				
+				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Into EVENT_GAPSTATE_CONNECTED !  \n", 0);
+			}
+
+			
+
 			if(Event == EVENT_SCAN_KEY_TIMER)
 			{
 				if((KEYscan_fun_cnt != 0)&&(cnt500ms%5 == 0)) {
@@ -324,6 +339,23 @@ void heartrate_task_app(void *pvParameters)
 						
 				}
 				cnt500ms++;
+
+				
+				if( BTconnectState == EVENT_GAPSTATE_ADVERTISING)
+				{
+					if( cnt500ms%2 == 0 )
+						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+					else
+						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); 
+				}	
+
+				if( BTconnectState == EVENT_GAPSTATE_CONNECTED)
+				{
+					if( cnt500ms%6 == 0 )
+						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); 
+					else
+						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+				}	
 		
 				if( GPIO_ReadInputDataBit(GPIO_S4_TEST_KEY_PIN) == RESET ){				
 					key_cnt++;

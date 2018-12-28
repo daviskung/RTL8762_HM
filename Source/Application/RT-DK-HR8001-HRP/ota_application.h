@@ -14,6 +14,7 @@
 #ifndef __OTA_APPLICATION__
 #define __OTA_APPLICATION__
 #include "bee_message.h"
+#include "pah8001.h"
 
 #ifdef __cplusplus
 extern "C" {
