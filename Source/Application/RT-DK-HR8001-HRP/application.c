@@ -51,7 +51,8 @@ extern void Driver_Init(void);
 extern uint8_t _touch_flag;
 extern uint8_t	NSTROBE_LOW_EndSet;
 
-UINT8 key_cnt,KEYscan_fun_cnt,cnt500ms;  // current setting
+UINT8 key_cnt,KEYscan_fun_cnt,cnt500ms;
+uint16_t WaitForConnect_Timeout;  // current setting
 
 extern uint8_t PWM_chanEN_Number;
 
@@ -96,6 +97,7 @@ uint8_t NoSignalShutdownCnt;
 #define IO_DEMO_EVENT_ADC_CONVERT_END          0x01
 
 #define	PWR_KEY_OFF_TIME_SET	5	
+#define	WAIT_FOR_CONNECT_TIME_SET	360	// 500ms*360 
 
 
 xTaskHandle  hOTAAppTaskHandle;
@@ -270,6 +272,7 @@ void heartrate_task_app(void *pvParameters)
 	UART_SendData(UART, uTxBuf, uTxCnt);
 	key_cnt = 0;
 	cnt500ms = 0;
+	WaitForConnect_Timeout = 0;
 	i=0;
 	
 	// PWR_KEY Locked warning
@@ -318,7 +321,6 @@ void heartrate_task_app(void *pvParameters)
 			if(Event == EVENT_GAPSTATE_CONNECTED)
 			{
 				BTconnectState = EVENT_GAPSTATE_CONNECTED;
-				
 				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Into EVENT_GAPSTATE_CONNECTED !  \n", 0);
 			}
 
@@ -343,6 +345,8 @@ void heartrate_task_app(void *pvParameters)
 				
 				if( BTconnectState == EVENT_GAPSTATE_ADVERTISING)
 				{
+					
+					WaitForConnect_Timeout++;
 					if( cnt500ms%2 == 0 )
 						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
 					else
@@ -351,6 +355,8 @@ void heartrate_task_app(void *pvParameters)
 
 				if( BTconnectState == EVENT_GAPSTATE_CONNECTED)
 				{
+					
+					WaitForConnect_Timeout = 0;
 					if( cnt500ms%6 == 0 )
 						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_SET); 
 					else
@@ -375,10 +381,17 @@ void heartrate_task_app(void *pvParameters)
 					if (PWRkey_timer_cnt > PWR_KEY_OFF_TIME_SET)
 					{
 						GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
-						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED off / PWR_CONTROL_PIN Off !!!\n", 0);
+						DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**<PWR_KEY> / PWR_CONTROL_PIN Off !!!\n", 0);
 						GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off						
 					}
 				}
+
+				if(WaitForConnect_Timeout > WAIT_FOR_CONNECT_TIME_SET){
+					GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
+					DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**<Wait For Connect Timeout> / PWR_CONTROL_PIN Off !!!\n", 0);
+					GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off						
+				}
+					
 
 			}
 
@@ -434,9 +447,9 @@ void heartrate_task_app(void *pvParameters)
 					        }
 							
 							if( NoSignalShutdownCnt > 20 ){
-								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "< No Signal Shutdown >",0);
+								//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "< No Signal Shutdown >",0);
 								GPIO_WriteBit(GPIO_STATUS_LED_PIN,Bit_RESET); 
-								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** STATUS_LED off / PWR_CONTROL_PIN Off !!!\n", 0);
+								DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** < No Signal Shutdown > / PWR_CONTROL_PIN Off !!!\n", 0);
 								GPIO_WriteBit(GPIO_PWR_CONTROL_PIN,Bit_RESET); // PWR_CONTROL_PIN Off	
 							}
 
