@@ -26,17 +26,14 @@ extern bool is_heart_rate_service_notification_enabled;
 extern bool is_heart_rate_monitor_notification_enabled;
 
 extern bool HeartRateServiceValueNotify(void);
-extern bool HeartRateMonitorValueNotify(void);
 
 extern xTimerHandle hPAH8001_Timer;
-extern xTimerHandle hADC_AR_CH1_Timer;
 extern xTimerHandle hIR_PWM_Timer;
 extern xTimerHandle hKEYscan_Timer;
 
 
 
 extern uint16_t adcConvertRes_HM[ARY_SIZE];
-extern uint8_t	adcConvertRes_HM_cnt;
 extern uint8_t	KEYscan_fun_cnt2;
 
 
@@ -80,50 +77,6 @@ bool KEYscan_fun(void)
 }
 
 
-
-/*--------------------------------------------------------------------------
-// Function name: bool AR_ADC_CH0(void)
-// Parameters: None
-// Return: None
-// Description:
-//--------------------------------------------------------------------------*/
-bool AR_ADC_CH1(void)
-{
-	uint8_t _hr_event;
-
-	//	_time_stamp++;
-
-	// Reset Timer 
-	xTimerReset(hADC_AR_CH1_Timer, HM_ADC_INTERVAL);
-		//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  AR_ADC_CH1 timer ** ", 0);
-
-	//enable ADC read and wait for ADC data ready interrupt
-    	ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);   //must disable first
-	    ADC_Cmd(ADC, ADC_One_Shot_Mode, ENABLE);
-
-    /*wait for adc sample ready*/
-    while (ADC_GetIntFlagStatus(ADC, ADC_INT_ONE_SHOT_DONE) != SET);
-    ADC_ClearINTPendingBit(ADC, ADC_INT_ONE_SHOT_DONE);
-    /*read sample result*/
-    
-	adcConvertRes_HM_cnt++;
-
-	
-	
-	if( adcConvertRes_HM_cnt >= ARY_SIZE ) adcConvertRes_HM_cnt=0;
-    adcConvertRes_HM[adcConvertRes_HM_cnt] = ADC_Read(ADC, ADC_CH1);
-
-	//DBG_DIRECT("adcConvertRes_HM[%d] = %d \n",adcConvertRes_HM_cnt,adcConvertRes_HM[adcConvertRes_HM_cnt]);
-
-	if( adcConvertRes_HM_cnt == (ARY_SIZE-1) )	_hr_event = EVENT_ADC_CONVERT_BUF_FULL;
-
-	// Send Task
-		xQueueSend(hHeartRateQueueHandle, &_hr_event, 1);
-		return TRUE;
-}
-
-
-
 /*--------------------------------------------------------------------------
 // Function name: bool Pixart_HRD(void)
 // Parameters: None
@@ -140,7 +93,7 @@ bool Pixart_HRD(void)
 
 		// Reset Timer 
 		xTimerReset(hPAH8001_Timer, 2000);
-		DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  HRD RTOS timer ** ", 0);
+		//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  HRD RTOS timer ** ", 0);
 		_hr_event = EVENT_START_HEARTRATE_CALCULATE;
 
 		// Send Task
@@ -593,109 +546,14 @@ void Get_AR_ADC(void)
 
 void CalculateHeartRate(void)
 {
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  CalculateHeartRate ** ", 0);
+	//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**  CalculateHeartRate ** ", 0);
 	if(is_heart_rate_service_notification_enabled == TRUE)
 	{
 		
 		HeartRateServiceValueNotify();
-//		HeartRateMonitorValueNotify();
 
 	}
-	
-	
-	
-#if 0	
-	uint8_t ready_flag;
 		
-	if(!isFIFOEmpty())
-	{
-		if(Pop(&hr_ppg_mems_data))
-		{
-			#ifdef DEBUG_PRINT_HR_RAW_DATA
-				uTxCnt = sprintf((char *)uTxBuf, "PPG_GSENSOR_RAW_DATA,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-				hr_ppg_mems_data.HRD_Data[0],hr_ppg_mems_data.HRD_Data[1],
-				hr_ppg_mems_data.HRD_Data[2],hr_ppg_mems_data.HRD_Data[3],
-				hr_ppg_mems_data.HRD_Data[4],hr_ppg_mems_data.HRD_Data[5],
-				hr_ppg_mems_data.HRD_Data[6],hr_ppg_mems_data.HRD_Data[7],
-				hr_ppg_mems_data.HRD_Data[8],hr_ppg_mems_data.HRD_Data[9],
-				hr_ppg_mems_data.HRD_Data[10],hr_ppg_mems_data.HRD_Data[11],
-				hr_ppg_mems_data.HRD_Data[12],
-				(int16_t)hr_ppg_mems_data.MEMS_Data[0],
-				(int16_t)hr_ppg_mems_data.MEMS_Data[1],
-				(int16_t)hr_ppg_mems_data.MEMS_Data[2]);
-				UART_SendData(UART, uTxBuf, uTxCnt);
-			#else
-				ready_flag = PxiAlg_Process(hr_ppg_mems_data.HRD_Data,hr_ppg_mems_data.MEMS_Data);
-
-				if(ready_flag == FLAG_DATA_READY)
-				{
-					PxiAlg_HrGet(&_myHR);
-
-					_cnt_to_update_heart_rate++;
-
-					if(_cnt_to_update_heart_rate >= EVERY_N_PPG_SAMPLES_TO_UPDATE_CHART)
-					{
-						_cnt_to_update_heart_rate = 0;
-
-						uTxCnt = sprintf((char *)uTxBuf, "HR=%03.0f\n", _myHR);
-
-						UART_SendData(UART, uTxBuf, uTxCnt);
-
-						if(is_heart_rate_service_notification_enabled == TRUE)
-						{
-							HeartRateServiceValueNotify();
-						}
-						else if(is_heart_rate_monitor_notification_enabled == TRUE)
-						{
-							HeartRateMonitorValueNotify();
-						}
-					}
-				}
-				else
-				{
-					#if 0
-					if(ready_flag == FLAG_DATA_NOT_READY)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=NRD\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_DATA_LOSS)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=LOS\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_NO_TOUCH)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=NTH\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_DATA_ERROR)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=ERR\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_POOR_SIGNAL)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=POR\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_FIFO_ERROR)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=FIO\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					else if(ready_flag == FLAG_TIMING_ERROR)
-					{
-						uTxCnt = sprintf((char *)uTxBuf, "HR=TIM\n");
-						UART_SendData(UART, uTxBuf, uTxCnt);
-					}
-					#endif
-				}
-			#endif
-		}
-	}	
-#endif	
-	
 }
 
 

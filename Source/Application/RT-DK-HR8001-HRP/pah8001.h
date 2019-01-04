@@ -37,7 +37,7 @@
 
 #define EVENT_START_HEARTRATE_CALCULATE 1
 #define EVENT_START_AR_ADC				2
-#define EVENT_ADC_CONVERT_BUF_FULL		3
+//#define EVENT_ADC_CONVERT_BUF_FULL		3
 #define EVENT_SCAN_KEY_TIMER			4
 #define EVENT_RxEndFlag_SET				5
 #define EVENT_PWR_KEY_PUSH_SET			6
@@ -82,21 +82,13 @@
 
 
 
-#define HM_ADC_AR               ADC_CH0
-#define HM_ADC_AN0              ADC_CH1
-#define HM_ADC_AN1              ADC_CH2
 
-
-#define MAXGAIN 63
-#define MINGAIN 0
-#define MIDGAIN 32
 
 
 /* TIM Defines ------------------------------------------------------------------*/
 #define TIM_ID                  TIM2
 
-#define NSTROBE_LOW_start		0
-#define NSTROBE_LOW_end			1
+
 
 
 

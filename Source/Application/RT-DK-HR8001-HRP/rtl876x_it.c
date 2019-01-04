@@ -37,7 +37,7 @@ void ADCIntrHandler(void)
     //uint8_t event = EVENT_ADC_CONVERT_BUF_FULL;
     portBASE_TYPE TaskWoken = pdFALSE;
     
-    ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);
+    //ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);
     
     ADC_ClearINTPendingBit(ADC, ADC_INT_ONE_SHOT_DONE);
     

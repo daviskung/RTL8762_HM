@@ -30,7 +30,9 @@
 #include "ota_application.h"
 #include "ota_service.h"
 #include "hrm_service.h"
-#include "battery_monitor.h"
+#include "rtl876x_adc.h"
+
+
 #include "bas.h"
 #include "dis.h"
 #include "hrs.h"
@@ -82,7 +84,6 @@ uint8_t gHRMServiceId;
 
 extern xTimerHandle hPAH8001_Timer;
 extern uint16_t adcConvertRes_HM[ARY_SIZE] = {0};
-extern uint8_t	adcConvertRes_HM_cnt=0;
 extern uint8_t	HM_100ms_cnt=0;
 
 extern uint8_t	NSTROBE_PWM_cnt=0;
@@ -167,7 +168,7 @@ uint8_t advertData[] =
 
 	0x14,	// Length
 	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','5','5','1','8'
+	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','5','5','1','2'
 	
 };
 
@@ -180,6 +181,10 @@ uint8_t advertData[] =
  */
 void BtStack_Init_Gap(void)
 {
+
+	
+	uint8_t mac_addr[6];
+
     //device name and device appearance
     uint8_t DeviceName[GAP_DEVICE_NAME_LEN] = "HeartMath-HRV";
     uint16_t Appearance = GAP_GATT_APPEARANCE_UNKNOWN;
@@ -226,6 +231,17 @@ void BtStack_Init_Gap(void)
 
     peripheralSetGapParameter(GAPPRRA_MIN_CONN_INTERVAL, sizeof(conIntMin), &conIntMin );
     peripheralSetGapParameter(GAPPRRA_MAX_CONN_INTERVAL, sizeof(conIntMax), &conIntMax );
+
+	
+	GAP_GetParameter(GAPPARA_BD_ADDR, &mac_addr[0]);
+	//DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **S4_TEST_KEY = %d \n", 1,key_cnt);
+	DBG_BUFFER(MODULE_APP,LEVEL_INFO," Davis Local BD-- 0x%2x,0x%2x,0x%2x,0x%2x,0x%2x,0x%2x",6,
+                    mac_addr[5],
+                    mac_addr[4],
+                    mac_addr[3],
+                    mac_addr[2],
+                    mac_addr[1],
+                    mac_addr[0]);
 
     peripheralSetGapParameter(GAPPRRA_ADVERT_DATA, sizeof( advertData ), advertData );
     peripheralSetGapParameter(GAPPRRA_SCAN_RSP_DATA, sizeof ( scanRspData ), scanRspData );
@@ -306,6 +322,31 @@ void Initialize_TIM(void)
 
 #endif
 
+void Initialize_ADC(void)
+{
+	
+	 /* turn on ADC clock */
+    RCC_PeriphClockCmd(APBPeriph_ADC, APBPeriph_ADC_CLOCK, ENABLE);
+
+	
+	/* ADC pad config */
+	Pad_Config(P2_5, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_NONE, PAD_OUT_DISABLE, PAD_OUT_LOW);
+
+    /* ADC init */
+    ADC_InitTypeDef adcInitStruct;
+
+    ADC_StructInit(&adcInitStruct);
+
+    /* use channel battery */
+    //adcInitStruct.channelMap = ADC_CH_BAT;
+    adcInitStruct.channelMap = ADC_CH5 ; 
+	
+    ADC_Init(ADC, &adcInitStruct);
+    ADC_INTConfig(ADC, ADC_INT_ONE_SHOT_DONE, ENABLE); //2019.1.4 
+
+	
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " battery ADC set OK !	\n", 0);
+}
 
 /******************************************************************
  * @fn         Initial GPIO
@@ -368,6 +409,7 @@ void Initialize_GPIO(void)
 	
 		DBG_BUFFER(MODULE_APP, LEVEL_INFO, " GPIO set OK !	\n", 0);
 	}
+
 }
 
 
@@ -449,7 +491,7 @@ void Initialize_NVIC(void)
     /* ADC IRQ */  
     NVIC_InitStruct.NVIC_IRQChannel = ADC_IRQ;
     NVIC_InitStruct.NVIC_IRQChannelPriority = 1;
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE; //2019.1.4
     
     NVIC_Init(&NVIC_InitStruct);
 	
@@ -485,12 +527,14 @@ void Board_Init(void)
 	All_Pad_Config_Default();
 
 	Initialize_GPIO();
+	Initialize_ADC();
 	
 	//InitGain(MIDGAIN);
 
 	//Initialize_TIM();
 	
 	//Initialize_I2C();
+	
 	Initialize_UART();	
 	Initialize_NVIC();
 }
@@ -503,10 +547,7 @@ void Board_Init(void)
 *
 * @return  void
 */
-void Driver_Init(void)
-{
-	BatteryMonitor_Init();	// 2018.09.03
-}
+
 
 
 /**

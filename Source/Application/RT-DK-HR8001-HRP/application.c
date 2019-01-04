@@ -99,6 +99,14 @@ uint8_t NoSignalShutdownCnt;
 #define	PWR_KEY_OFF_TIME_SET	5	
 #define	WAIT_FOR_CONNECT_TIME_SET	360	// 500ms*360 
 
+/* version date set */
+#define	VER_DAY_SET		4
+#define	VER_MONTH_SET	1
+#define	VER_YEAR_SET	2019
+#define	VER_DASH_SET	3
+
+
+
 
 xTaskHandle  hOTAAppTaskHandle;
 xTaskHandle  hHeartRateAppTaskHandle;
@@ -109,7 +117,6 @@ xQueueHandle hIoQueueHandle;
 xQueueHandle hHeartRateQueueHandle = NULL;
 xTimerHandle hPAH8001_Timer = NULL;
 
-xTimerHandle hADC_AR_CH1_Timer = NULL;
 xTimerHandle hIR_PWM_Timer = NULL;
 xTimerHandle hKEYscan_Timer = NULL;
 
@@ -189,7 +196,7 @@ void bee_task_app(void *pvParameters )
 
 	peripheral_StartBtStack();
 
-	Driver_Init();
+	//Driver_Init();
 
 	while(true)
     {
@@ -237,18 +244,6 @@ void heartrate_task_app(void *pvParameters)
 	}
 
 	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " ***hPAH8001_Timer value = 0x%x \n", 1,hPAH8001_Timer);
-
-	if(hADC_AR_CH1_Timer == NULL)
-	{
-		hADC_AR_CH1_Timer = xTimerCreate("HM_ADC_AR_TIMER",			// Just a text name, not used by the kernel.
-										(HM_ADC_INTERVAL/portTICK_RATE_MS),	// The timer period in ticks. 
-										pdFALSE,						// The timers will auto-reload themselves when they expire.
-										(void *)HM_ADC_AR_TIMER_ID,						// Assign each timer a unique id equal to its array index.
-										(TimerCallbackFunction_t) AR_ADC_CH1);
-	}
-
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " ***hADC_AR_CH1_Timer value = 0x%x \n", 1,hADC_AR_CH1_Timer);
-
 	
 	if(hKEYscan_Timer == NULL)
 	{
@@ -295,7 +290,8 @@ void heartrate_task_app(void *pvParameters)
 	KEYscan_fun_cnt = 1;
 	NoSignalShutdownCnt = 0;
 	
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " Ver. %d-%d b \n",2,12,28);
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " Ver. %d/%d/%d -%d \n",4,
+		VER_MONTH_SET,VER_DAY_SET,VER_YEAR_SET,VER_DASH_SET);
 	
 	while(true)
 	{
@@ -304,12 +300,6 @@ void heartrate_task_app(void *pvParameters)
 			if(Event == EVENT_START_HEARTRATE_CALCULATE)
 			{
 				CalculateHeartRate();
-			}
-
-			if(Event == EVENT_ADC_CONVERT_BUF_FULL)
-			{
-				DBG_BUFFER(MODULE_APP, LEVEL_INFO, "** Into EVENT_ADC_CONVERT_BUF_FULL !  \n", 0);
-				Get_AR_ADC();
 			}
 
 			if(Event == EVENT_GAPSTATE_ADVERTISING)
@@ -494,14 +484,3 @@ void Timer2IntrHandler(void)
 }
 
 
-
-void Gpio16IntrHandler(void)
-{
-	// Disable Interrupt
-	GPIO_ClearINTPendingBit(GPIO_GetPin(P2_0));
-	GPIO_INTConfig(GPIO_GetPin(P2_0), DISABLE);
-	GPIO_MaskINTConfig(GPIO_GetPin(P2_0), ENABLE);
-
-	// Start Timer
-//	xTimerStart(hPAH8001_Timer, 0);
-}

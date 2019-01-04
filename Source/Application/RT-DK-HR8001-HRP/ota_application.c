@@ -42,13 +42,15 @@
 #include "timers.h"
 #include "rtl876x_uart.h"
 
+#define 	VOLT_3V5	0x61f4
+#define 	VOLT_4V2	0x6baf
+
 
 // gap state
 gaprole_States_t gapProfileState = GAPSTATE_INIT;
 extern xQueueHandle hHeartRateQueueHandle;
 
 extern xTimerHandle hPAH8001_Timer;
-extern xTimerHandle hADC_AR_CH1_Timer;
 extern xTimerHandle hKEYscan_Timer;
 
 
@@ -70,7 +72,6 @@ extern uint8_t _myHR;
 extern uint8_t heart_rate_value[];
 extern uint16_t heart_rate_size;
 
-extern uint16_t adcConvertRes_HM_cnt;
 extern uint16_t adcConvertRes_HM[ARY_SIZE];
 
 
@@ -414,7 +415,8 @@ void SwitchIntoOTAmode(void)
 
 void UpdateBatteryLevel(void)
 {
-    uint16_t adcConvertRes;
+    uint16_t adcConvertRes,tmpvalue;
+	uint16_t	VoltRead;
     //enable ADC read and wait for ADC data ready interrupt
     ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);   //must disable first
     ADC_Cmd(ADC, ADC_One_Shot_Mode, ENABLE);
@@ -425,12 +427,12 @@ void UpdateBatteryLevel(void)
     /*read sample result*/
     //adcConvertRes = ADC_Read(ADC, ADC_CH_BAT);
 	
-    adcConvertRes = ADC_Read(ADC, ADC_CH0);
+    adcConvertRes = ADC_Read(ADC, ADC_CH5);
 
 	
-	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **BatteryLevel adcConvertRes value = 0x%x \n", 1,adcConvertRes);
+	//DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **BatteryLevel adcConvertRes value = 0x%x \n", 1,adcConvertRes);
 
-	
+	#if 0
     /* return voltage (mV)  */
     if (adcConvertRes < 0x2DF2)
     {
@@ -441,7 +443,38 @@ void UpdateBatteryLevel(void)
         /*example formula to calculate battery level, full range is 3.3v*/
         gBASBatteryLevel = (100 * (20 * ((adcConvertRes - 0x2DF2) / 0x10A + 1))) / 0xCE4;
     }
+	#endif
 
+	/* return voltage (mV)  */
+	//
+	// from VOLT_3V5 & VOLT_4V2 to calulate a & b
+	// VOLT_3V5 = a * (3.5V) + b
+	// VOLT_4V2 = a * (4.2V) + b
+	//
+	VoltRead = ((adcConvertRes-12596)*100)/3565; // real voltage
+	
+    if (VoltRead <= 350) // 3.5V
+    {
+        gBASBatteryLevel = 0;
+    }
+	else if(VoltRead >= 420)	
+		gBASBatteryLevel = 100;
+	
+    else
+    {
+		tmpvalue = ((VoltRead - 350)*100)/(420-350);
+		
+        gBASBatteryLevel = (uint8_t)tmpvalue;
+	
+        /*example formula to calculate battery level, full range is 3.3v*/
+		// tmpvalue = (100 * (adcConvertRes - VOLT_3V5)) / (VOLT_4V2 - VOLT_3V5) ;
+        // gBASBatteryLevel = (uint8_t)tmpvalue;
+    }
+	
+	
+	DBG_BUFFER(MODULE_APP, LEVEL_INFO, " **BatteryLevel %d adc value = 0x%x volt=%d \n",
+		3,tmpvalue,adcConvertRes,VoltRead);
+	
     ADC_Cmd(ADC, ADC_One_Shot_Mode, DISABLE);
     BAS_SetParameter(BAS_PARAM_BATTERY_LEVEL, 1, &gBASBatteryLevel);
 }
@@ -511,18 +544,6 @@ bool HeartRateServiceValueNotify(void)
 
 
 	return HRS_HeartRateMeasurementValueNotify(gHRSServiceId);
-}
-
-uint8_t MyHRCount=0;
-bool HeartRateMonitorValueNotify(void)
-{
-	
-	MyHRCount++;
-	if(MyHRCount>=256)	MyHRCount = 0;
-
-	DBG_BUFFER(MODULE_DRIVERTASK, LEVEL_INFO, "***  My Heart Rate = %d  \n", 1, MyHRCount);
-	heart_rate_size = MyHRCount;
-	return ProfileAPI_SendData(gHRMServiceId, BLE_SERVICE_CHAR_HR_REPORT_INDEX, &heart_rate_value[0], heart_rate_size);
 }
 
 
@@ -660,14 +681,9 @@ TAppResult AppProfileCallback(uint8_t serviceID, void *pData)
     	
 			case SERVICE_CALLBACK_TYPE_READ_CHAR_VALUE:
 				{
-					xTimerStart(hADC_AR_CH1_Timer, 0);					
-					adcConvertRes_HM_cnt = 0;
 					
 					/*check battery level firstly*/
-					UpdateBatteryLevel();
-		
-					//DBG_BUFFER(MODULE_APP, LEVEL_INFO, "**after hADC_AR_CH1_Timer ENABLE\n", 0);
-					
+					UpdateBatteryLevel();					
 				}
 				break;
 			default:
