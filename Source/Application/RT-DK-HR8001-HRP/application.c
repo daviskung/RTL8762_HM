@@ -103,7 +103,10 @@ uint8_t NoSignalShutdownCnt;
 #define	VER_DAY_SET		7
 #define	VER_MONTH_SET	1
 #define	VER_YEAR_SET	2019
-#define	VER_DASH_SET	0
+#define	VER_DASH_SET	1	
+// push code to Backlog : 
+// Repository Name : RTL8762HM3_0107_2019
+// HTTPhttps://davishm3.backlog.com/git/RTL8762HM3/RTL8762HM3_0107_2019.git
 
 
 
