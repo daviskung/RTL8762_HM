@@ -100,10 +100,10 @@ uint8_t NoSignalShutdownCnt;
 #define	WAIT_FOR_CONNECT_TIME_SET	360	// 500ms*360 
 
 /* version date set */
-#define	VER_DAY_SET		4
+#define	VER_DAY_SET		7
 #define	VER_MONTH_SET	1
 #define	VER_YEAR_SET	2019
-#define	VER_DASH_SET	3
+#define	VER_DASH_SET	0
 
 
 

@@ -153,22 +153,33 @@ uint8_t advertData[] =
 	/* Flags */
 	0x02,
 	GAP_ADTYPE_FLAGS,
-	GAP_ADTYPE_FLAGS_LIMITED|GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+	//GAP_ADTYPE_FLAGS_LIMITED|GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED, // 2019.01.07 change
+	GAP_ADTYPE_FLAGS_GENERAL|GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
 
+	/* 2019.01.07 change
 	 0x03,
 	GAP_ADTYPE_APPEARANCE,
 	LO_WORD(GATT_APPEARANCE_UNKNOWN), 		
 	HI_WORD(GATT_APPEARANCE_UNKNOWN),
-	
-	/*
-	0x0E,	// Length
-	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V'
 	*/
-
+	
 	0x14,	// Length
-	GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','5','5','1','2'
+	//GAP_ADTYPE_LOCAL_NAME_COMPLETE,
+	GAP_ADTYPE_LOCAL_NAME_SHORT,
+	'H','e','a','r', 't','M','a','t','h','-','H', 'R', 'V','-','C','0','0','0','0'
+
+	/*
+	0x09,
+	GAP_ADTYPE_16BIT_COMPLETE,
+	//  Complete list of 16-bit UUIDs
+	,
+	
+	
+	0x05,
+	GAP_ADTYPE_SLAVE_CONN_INTERVAL_RANGE,
+	MY_ADVERTISING_INTERVAL_MIN,MY_ADVERTISING_INTERVAL_MAX
+	
+	*/
 	
 };
 
@@ -242,6 +253,12 @@ void BtStack_Init_Gap(void)
                     mac_addr[2],
                     mac_addr[1],
                     mac_addr[0]);
+
+
+	advertData[20] = (( mac_addr[1] & 0xf0 ) >>4) + '0';
+	advertData[21] = ( mac_addr[1] & 0x0f ) + '0';
+	advertData[22] = (( mac_addr[0] & 0xf0 ) >>4) + '0';
+	advertData[23] = ( mac_addr[0] & 0x0f ) + '0';
 
     peripheralSetGapParameter(GAPPRRA_ADVERT_DATA, sizeof( advertData ), advertData );
     peripheralSetGapParameter(GAPPRRA_SCAN_RSP_DATA, sizeof ( scanRspData ), scanRspData );

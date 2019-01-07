@@ -24,6 +24,8 @@ extern uint8_t	NSTROBE_PWM_cnt;
 extern uint8_t	NSTROBE_LOW_EndSet;
 extern uint32_t GPIO_NSTROBE_value;
 
+//const uint8_t HexNumTable[16]={
+// '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 
 
